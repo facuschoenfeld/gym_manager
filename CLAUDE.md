@@ -80,6 +80,7 @@ src-tauri/src/lote.rs    comando ejecutar_lote (transacciones)
 - plugin-sql **enlaza todos los números como `f64`**. Funciona en columnas INTEGER (SQLite convierte los valores enteros), pero los montos tienen que llegar siempre como enteros.
 - En un `execute` con varias sentencias, `$N` se refiere a la posición N de **toda** la lista de parámetros, no de cada sentencia (sqlx-sqlite).
 - Los PRAGMA no tienen efecto dentro de una migración (corren dentro de una transacción). Se aplican en `client.ts`.
+- **RAM:** WebView2 usa varios procesos y la aceleración por GPU ocupaba ~106 MB. Con `--disable-gpu` (en `additionalBrowserArgs` de `tauri.conf.json`) la app en release baja de ~216 MB a ~118 MB de memoria privada. Esas args reemplazan las que Tauri pone por defecto, así que hay que mantener `--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection`. Para medir: sumar la memoria privada de `gym-manager.exe` y de los `msedgewebview2.exe` cuya línea de comandos contiene `ar.gym.manager`.
 - La CSP no permite scripts inline: usar archivos en `public/` (por ejemplo `public/tema.js`).
 
 ## Fuera de alcance
