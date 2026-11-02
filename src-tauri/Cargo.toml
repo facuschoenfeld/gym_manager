@@ -1,0 +1,41 @@
+[package]
+name = "gym-manager"
+version = "0.1.0"
+description = "Gestión de socios y cuotas para gimnasio"
+authors = ["Facundo Schoenfeld"]
+edition = "2024"
+
+[lib]
+# El sufijo `_lib` evita un conflicto de nombres entre la lib y el binario en Windows.
+# Ver https://github.com/rust-lang/cargo/issues/8519
+name = "gym_manager_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+log = "0.4"                                                 # niveles de log (lo usa tauri-plugin-log)
+# Plugins oficiales de Tauri. Cada uno tiene su contraparte en JS (@tauri-apps/plugin-*).
+tauri-plugin-opener = "2"                                   # abrir links (wa.me) en el navegador
+tauri-plugin-sql = { version = "2", features = ["sqlite"] } # SQLite + migraciones
+tauri-plugin-dialog = "2"                                   # elegir archivos / confirmar
+tauri-plugin-fs = "2"                                       # leer/escribir archivos (Excel, respaldos)
+tauri-plugin-notification = "2"                             # notificaciones de Windows
+tauri-plugin-log = "2"                                      # archivo de registro de errores
+tauri-plugin-process = "2"                                  # reiniciar la app tras restaurar
+
+# Solo en escritorio: impide abrir la app dos veces (dos procesos escribiendo la misma base).
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-single-instance = "2"
+
+# Optimización del ejecutable final: https://tauri.app/concept/size/#cargo-configuration
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = true
