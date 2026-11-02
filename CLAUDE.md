@@ -3,8 +3,9 @@
 App de escritorio para un gimnasio que reemplaza un Excel de cuotas: muestra quién está al día, quién está por vencer y quién debe. Los pagos (efectivo o transferencia) se cobran por fuera y se **registran a mano**. La usa un coach sin conocimientos técnicos, en **una sola PC** de recepción, **sin internet**. Interfaz y textos en **español (Argentina)**.
 
 - Especificación completa: `PROMPT_CLAUDE_CODE_GIMNASIO.md`. El plan por fases se acordó en la sesión inicial; el resumen está abajo.
-- PC destino: i5-7200U, 8 GB (~2,8 GB libres), **Windows 10 1909**. Objetivo: **< 100 MB de RAM** y arranque rápido.
-- El desarrollador maneja TS/React/Node, **no Rust**: Rust al mínimo y cada línea comentada y explicada.
+- PC destino: i5-7200U, 8 GB (~2,8 GB libres), **Windows 10 1909**. Objetivo del documento: **< 100 MB de RAM** y arranque rápido. Lo medido está en *Estado actual*.
+- El desarrollador maneja TS/React/Node, **no Rust**: Rust al mínimo y cada línea comentada y explicada. No usa rust-analyzer (lo desinstaló): los cambios en Rust los hace Claude y los explica.
+- Trabajo en fases: al cerrar cada una, hay que frenar y reportar antes de seguir. Las decisiones importantes o ambiguas se consultan antes de implementarlas.
 
 ## Comandos
 ```
@@ -15,7 +16,15 @@ pnpm lint             # ESLint (sin `any`)
 pnpm build            # build del frontend
 pnpm tauri build      # instalador NSIS en src-tauri/target/release/bundle/nsis
 ```
-Base de datos en desarrollo: `%APPDATA%\ar.gym.manager\gym.db`. Logs: `%LOCALAPPDATA%\ar.gym.manager\logs`.
+- Todos los comandos se ejecutan desde la raíz del proyecto (`D:\Projects\gym_manager`), no desde `src-tauri`.
+- La primera compilación de Rust tarda ~5 min en debug y ~9 min en release; las siguientes son incrementales.
+- `pnpm tauri build --no-bundle` compila solo el ejecutable (`src-tauri/target/release/gym-manager.exe`), sin instalador. Sirve para medir RAM.
+- Base de datos en desarrollo: `%APPDATA%\ar.gym.manager\gym.db`. Logs: `%LOCALAPPDATA%\ar.gym.manager\logs`.
+- Para inspeccionar la base sin abrir la app: `node --experimental-sqlite` con `DatabaseSync(ruta, { readOnly: true })`. No hay `sqlite3` instalado.
+
+## Entorno de desarrollo (verificado el 2026-11-02)
+Windows 11 Pro · Node 22.14 · pnpm 12.16 · Rust 1.99 (`stable-x86_64-pc-windows-msvc`) · VS Build Tools 2022 (MSVC 14.44, Windows SDK 10.0.26100) · WebView2 156 · git 2.54.
+pnpm 12 bloquea los scripts de instalación: los permitidos se declaran en `allowBuilds` de `pnpm-workspace.yaml` (hoy solo `esbuild`). Para agregar uno: `pnpm approve-builds <paquete> -y`.
 
 ## Stack
 Tauri 2 · React 19 + TS + Vite · Tailwind v4 + shadcn/ui (radix-nova, `cn` del paquete `cn`) · SQLite con `@tauri-apps/plugin-sql` · React Hook Form + Zod 4 · TanStack Query + Table · React Router (HashRouter) · date-fns · sonner (toasts) · lucide-react · SheetJS CE 0.20.3 (tarball de cdn.sheetjs.com, **no** la versión de npm; cargarlo con `import()` dinámico) · Vitest.
@@ -86,17 +95,56 @@ src-tauri/src/lote.rs    comando ejecutar_lote (transacciones)
 ## Fuera de alcance
 Pagos online, Mercado Pago o QR · envío automático de email o WhatsApp (solo links `wa.me` manuales) · control de acceso o asistencias · facturación AFIP · multiusuario o login · versión web o móvil · nube. El diseño por capas tiene que permitir sumar cualquiera de estas cosas más adelante sin reescribir.
 
-## Fases
-0. Esqueleto y entorno
-1. Base de datos y lógica pura
-2. Planes, configuración y socios
-3. Pagos
-4. Panel de deudores y avisos por WhatsApp
-5. Importación desde Excel
-6. Respaldos, estado del sistema y log de errores
-7. Instalador y updater
+## Decisiones tomadas con el usuario
+- **Planes:** ABM flexible (período × cantidad + precio). Se crean de entrada "Pase diario", "Semanal" y "Mensual", con precio 0.
+- **Mes calendario** para los vencimientos, no 30 días fijos.
+- **Notificaciones (RNF-08):** toast para cada acción y notificación de Windows solo para tareas en segundo plano.
+- **Instalador:** NSIS en español con `embedBootstrapper` de WebView2. La PC del gimnasio tiene internet al instalar.
+- **Transacciones:** opción A, un comando Rust propio (`ejecutar_lote`), en lugar de lotes SQL con `INSERT OR ROLLBACK`.
+- **RAM:** se acepta `--disable-gpu`. Bajar de 100 MB no es viable con WebView2.
+- Las fechas se guardan en `YYYY-MM-DD`, aunque el .md original dice "ISO (DD-MM-YYYY)", que es contradictorio.
+
+## Estado actual
+| Fase | Estado |
+|---|---|
+| 0. Esqueleto y entorno | ✅ Cerrada (2026-11-02) |
+| 1. Base de datos y lógica pura | ✅ Hecha dentro de la fase 0 (migración 001, `src/lib/*` con 133 tests). Faltan los esquemas Zod de formularios, que se hacen en la fase 2. |
+| 2. Planes, configuración y socios | ⏭️ Siguiente |
+| 3. Pagos | Pendiente |
+| 4. Panel de deudores y avisos por WhatsApp | Pendiente. La pantalla de Inicio hoy es solo de diagnóstico (base, migraciones y prueba de transacciones en desarrollo). |
+| 5. Importación desde Excel | Pendiente |
+| 6. Respaldos, estado del sistema y log de errores | Pendiente |
+| 7. Instalador y updater | Pendiente |
+
+**Verificado en la fase 0:**
+- `pnpm tauri dev` compila sin advertencias.
+- La migración 001 se aplica sobre una base nueva y se respeta en una base existente (4 aperturas, una sola versión registrada).
+- La base queda en modo WAL.
+- Las 4 pruebas de `ejecutarLote` pasan: confirma, guarda los enteros como INTEGER, hace rollback completo y la base no queda bloqueada.
+- Arranque en release: 0,7 s. Ejecutable: 5,5 MB.
+
+**RAM medida (memoria privada total):**
+
+| Modo | Memoria privada |
+|---|---|
+| release con GPU | ~216 MB |
+| **release con `--disable-gpu`** | **~118 MB** |
+| dev con `--disable-gpu` | ~169 MB |
+
+En dev el renderer pesa más (~88 MB contra ~33 MB en release) por React en modo desarrollo y el servidor de Vite.
+
+**Commits:**
+
+| Commit | Contenido |
+|---|---|
+| `fb1d0c6` | esqueleto |
+| `f31a9db` | `ejecutar_lote` |
+| `18085d8` | `--disable-gpu` |
+| `bb7080a` | quitar `rust-analyzer` de las recomendaciones |
 
 ## Pendientes
-- El Excel real del gimnasio, para ajustar el mapeo por defecto.
-- Dónde publicar las actualizaciones (fase 7).
-- Código de área por defecto (`config.codigo_area`).
+- **Código de área por defecto** (`config.codigo_area`): se le preguntó al usuario la ciudad del gimnasio y todavía no respondió. Si no responde, queda vacío y se configura desde la app.
+- Probar `window.print()` en WebView2 con `--disable-gpu` (fase 4, vista imprimible).
+- Probar el instalador en Windows 10 1909 real o en una VM (fase 7). Lo ideal es la PC del gimnasio.
+- El Excel real del gimnasio, para ajustar el mapeo por defecto (fase 5).
+- Dónde publicar las actualizaciones (fase 7; se sugirió GitHub Releases).
