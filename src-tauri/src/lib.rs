@@ -1,8 +1,11 @@
 // =====================================================================
 // Shell de Tauri. REGLA DEL PROYECTO: acá NO va lógica de negocio.
-// Este archivo solo registra plugins y la lista de migraciones SQL.
+// Este archivo solo registra plugins, la lista de migraciones SQL y el
+// único comando propio (`ejecutar_lote`, en lote.rs).
 // Toda la lógica vive en TypeScript (src/).
 // =====================================================================
+
+mod lote; // carga el archivo src/lote.rs
 
 use tauri::Manager; // trae `get_webview_window` para enfocar la ventana existente
 use tauri_plugin_sql::{Migration, MigrationKind};
@@ -56,6 +59,8 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_process::init())
+        // Comandos propios que JS puede llamar con `invoke(...)`.
+        .invoke_handler(tauri::generate_handler![lote::ejecutar_lote])
         .run(tauri::generate_context!())
         .expect("error al iniciar la aplicación");
 }

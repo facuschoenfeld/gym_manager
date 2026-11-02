@@ -20,6 +20,7 @@ Base de datos en desarrollo: `%APPDATA%\ar.gym.manager\gym.db`. Logs: `%LOCALAPP
 ## Stack
 Tauri 2 · React 19 + TS + Vite · Tailwind v4 + shadcn/ui (radix-nova, `cn` del paquete `cn`) · SQLite con `@tauri-apps/plugin-sql` · React Hook Form + Zod 4 · TanStack Query + Table · React Router (HashRouter) · date-fns · sonner (toasts) · lucide-react · SheetJS CE 0.20.3 (tarball de cdn.sheetjs.com, **no** la versión de npm; cargarlo con `import()` dinámico) · Vitest.
 Plugins de Tauri: sql, dialog, fs, opener (solo `https://wa.me/*`), notification, log, process, single-instance. El updater queda para la fase 7.
+Único comando Rust propio: `ejecutar_lote` (`src-tauri/src/lote.rs`), que ejecuta varias sentencias en una transacción.
 **No usar:** Electron, servidor Node/Express, servicios externos, nada que necesite internet.
 
 ## Estructura
@@ -31,7 +32,8 @@ src/db/client.ts         conexión, PRAGMAs, consultar/ejecutar tipados
 src/db/queries/          consultas por módulo
 src/lib/                 utilidades PURAS con tests: fechas, dinero, telefonos, texto, estado, vencimiento
 src/components/          UI compartida (ui/ = shadcn, layout/, tema, notificar)
-src-tauri/src/lib.rs     solo registro de plugins y lista de migraciones
+src-tauri/src/lib.rs     solo registro de plugins, lista de migraciones y comandos
+src-tauri/src/lote.rs    comando ejecutar_lote (transacciones)
 ```
 
 ## Reglas de datos (obligatorias)
@@ -74,7 +76,7 @@ src-tauri/src/lib.rs     solo registro de plugins y lista de migraciones
 - Al terminar cada fase, listar: qué se hizo, cómo probarlo, qué queda pendiente, qué decisiones se tomaron y la RAM medida.
 
 ## Particularidades técnicas (aprendidas)
-- **plugin-sql usa un pool de 10 conexiones y no tiene API de transacciones.** Un `BEGIN` y su `COMMIT` en llamadas separadas pueden ejecutarse en conexiones distintas. Para operaciones de varias sentencias hay que ver *Transacciones* en "Pendientes".
+- **Transacciones:** plugin-sql usa un pool de 10 conexiones sin API de transacciones, así que **nunca** hay que mandar `BEGIN`/`COMMIT` con `ejecutar()`. Toda operación de varias sentencias (registrar pago, importar, etc.) va con `ejecutarLote([{ sql, parametros }])` de `src/db/client.ts`: se aplica todo o nada. Dentro de un lote, para referirse a filas recién insertadas se usan subconsultas o `last_insert_rowid()`. La verificación está en `src/db/diagnostico.ts` (botón en Inicio, solo en desarrollo).
 - plugin-sql **enlaza todos los números como `f64`**. Funciona en columnas INTEGER (SQLite convierte los valores enteros), pero los montos tienen que llegar siempre como enteros.
 - En un `execute` con varias sentencias, `$N` se refiere a la posición N de **toda** la lista de parámetros, no de cada sentencia (sqlx-sqlite).
 - Los PRAGMA no tienen efecto dentro de una migración (corren dentro de una transacción). Se aplican en `client.ts`.
@@ -94,7 +96,6 @@ Pagos online, Mercado Pago o QR · envío automático de email o WhatsApp (solo 
 7. Instalador y updater
 
 ## Pendientes
-- **Transacciones:** definir cómo hacer atómicas la importación y el registro de pagos (ver la nota de la fase 0).
 - El Excel real del gimnasio, para ajustar el mapeo por defecto.
 - Dónde publicar las actualizaciones (fase 7).
 - Código de área por defecto (`config.codigo_area`).

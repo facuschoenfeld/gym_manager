@@ -2,8 +2,10 @@
  * Pantalla de inicio. En la fase 0 solo verifica que la base esté creada y migrada;
  * en la fase 4 se convierte en el panel de deudores y contadores.
  */
-import { useQuery } from "@tanstack/react-query";
-import { CircleCheck } from "lucide-react";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { CircleCheck, CircleX } from "lucide-react";
+import { probarTransacciones } from "@/db/diagnostico";
+import { Button } from "@/components/ui/button";
 import { consultar } from "@/db/client";
 import { leerConfig } from "@/db/queries/config";
 import { Pagina } from "@/components/layout/Pagina";
@@ -49,6 +51,39 @@ export function PaginaInicio() {
           )}
         </CardContent>
       </Card>
+      {import.meta.env.DEV && <PruebaTransacciones />}
     </Pagina>
+  );
+}
+
+/** Solo en desarrollo: verifica que ejecutarLote confirme y deshaga correctamente. */
+function PruebaTransacciones() {
+  const prueba = useMutation({ mutationFn: probarTransacciones });
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Prueba de transacciones (solo desarrollo)</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <Button size="lg" onClick={() => prueba.mutate()} disabled={prueba.isPending}>
+          Ejecutar prueba
+        </Button>
+        {prueba.error && <p className="text-destructive">{String(prueba.error)}</p>}
+        <ul className="space-y-1">
+          {prueba.data?.map((r) => (
+            <li key={r.nombre} className="flex items-start gap-2">
+              {r.ok ? (
+                <CircleCheck className="mt-0.5 size-5 shrink-0 text-green-600" aria-label="OK" />
+              ) : (
+                <CircleX className="mt-0.5 size-5 shrink-0 text-destructive" aria-label="Falló" />
+              )}
+              <span>
+                <strong>{r.nombre}</strong>: {r.detalle}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </CardContent>
+    </Card>
   );
 }

@@ -27,6 +27,9 @@ tauri-plugin-fs = "2"                                       # leer/escribir arch
 tauri-plugin-notification = "2"                             # notificaciones de Windows
 tauri-plugin-log = "2"                                      # archivo de registro de errores
 tauri-plugin-process = "2"                                  # reiniciar la app tras restaurar
+# Misma librería que usa tauri-plugin-sql por dentro (se comparte la versión 0.8).
+# La usamos solo en src/lote.rs para ejecutar varias sentencias en UNA transacción.
+sqlx = { version = "0.8", default-features = false, features = ["sqlite", "runtime-tokio"] }
 
 # Solo en escritorio: impide abrir la app dos veces (dos procesos escribiendo la misma base).
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
