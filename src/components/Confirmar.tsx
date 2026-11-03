@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 const CLASES_PELIGRO = "bg-destructive text-white hover:bg-destructive/90 dark:bg-red-700 dark:hover:bg-red-600";
 /** Acción secundaria peligrosa: contorno rojo, para que no compita con el botón principal. */
 const CLASES_PELIGRO_SECUNDARIA =
-  "border-red-700/60 text-red-700 hover:bg-red-50 hover:text-red-800 dark:border-red-400/60 dark:text-red-400 dark:hover:bg-red-950 dark:hover:text-red-300";
+  "border-red-700/60 text-red-700 hover:bg-red-50 hover:text-red-800 dark:border-red-400/60 dark:text-red-300 dark:hover:bg-red-950 dark:hover:text-red-200";
 
 export interface AccionConfirmar {
   texto: string;
@@ -59,7 +59,10 @@ export function Confirmar({
   return (
     <AlertDialog open={abierto} onOpenChange={(a) => !procesando && alCambiar(a)}>
       <AlertDialogContent
-        className={cn(secundaria ? "sm:max-w-2xl" : "sm:max-w-lg")}
+        // Misma variante que el componente base (data-[size=default]:sm:max-w-sm) para que `cn`
+        // la reemplace: con "sm:max-w-*" a secas ganaba la base por especificidad y la caja
+        // quedaba en 384 px, con los botones saliéndose del recuadro.
+        className={cn(secundaria ? "data-[size=default]:sm:max-w-2xl" : "data-[size=default]:sm:max-w-lg")}
         onCloseAutoFocus={(e) => {
           const destino = focoAlCerrar?.current;
           if (destino?.isConnected) {

@@ -255,8 +255,8 @@ export function FormularioSocioDialogo({ abierto, alCerrar, socio, socios, alGua
         </form>
 
         <DialogFooter className="sticky bottom-0 items-center bg-popover">
-          {config.isPending && <p className="mr-auto text-muted-foreground">Cargando configuración…</p>}
-          {config.error && <p className="mr-auto font-medium text-destructive">No se pudo cargar la configuración. Cerrá y volvé a abrir.</p>}
+          {config.isPending && <p className="mr-auto min-w-0 flex-1 text-muted-foreground">Cargando configuración…</p>}
+          {config.error && <p className="mr-auto min-w-0 flex-1 font-medium text-destructive">No se pudo cargar la configuración. Cerrá y volvé a abrir.</p>}
           <Button variant="outline" onClick={cerrar} disabled={formState.isSubmitting}>
             Cancelar
           </Button>
