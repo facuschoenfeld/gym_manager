@@ -30,3 +30,4 @@ dist-ssr
 respaldos/
 # Excel de prueba generado (se regenera con pnpm generar:excel-prueba)
 scripts/salida/
+PROMPT_CLAUDE_CODE_GIMNASIO.md
