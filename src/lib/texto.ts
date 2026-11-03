@@ -59,10 +59,12 @@ export function normalizarDni(entrada: string | number | null | undefined): Resu
   let t = limpiarEspacios(String(entrada ?? ""));
   if (t === "") return { ok: true, dni: null };
   t = t.replace(/\.0+$/, "");
-  const d = soloDigitos(t);
-  if (d.length === 0) return { ok: false, motivo: "El DNI no tiene números" };
+  const digitos = soloDigitos(t);
+  if (digitos.length === 0) return { ok: false, motivo: "El DNI no tiene números" };
+  // Los ceros a la izquierda no cuentan: "0000001" no es un DNI válido.
+  const d = digitos.replace(/^0+/, "");
   if (d.length < 6 || d.length > 9) return { ok: false, motivo: "El DNI debe tener entre 6 y 9 dígitos" };
-  return { ok: true, dni: d.replace(/^0+/, "") };
+  return { ok: true, dni: d };
 }
 
 /** "12345678" -> "12.345.678" para mostrar. */

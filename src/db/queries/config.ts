@@ -1,6 +1,6 @@
 /** Lectura y escritura de la tabla `config` (clave/valor), validada con Zod. */
 import { z } from "zod";
-import { consultar, ejecutar } from "../client";
+import { consultar, ejecutarLote } from "../client";
 
 const entero = (min: number, max: number, porDefecto: number) =>
   z.coerce.number().int().min(min).max(max).catch(porDefecto);
@@ -29,11 +29,12 @@ export async function leerConfig(): Promise<Config> {
   return esquemaConfig.parse(crudo);
 }
 
+/** Guarda varias claves en UNA transacción: o se guardan todas o ninguna. */
 export async function guardarConfig(cambios: Partial<Config>): Promise<void> {
-  for (const [clave, valor] of Object.entries(cambios)) {
-    await ejecutar(
-      "INSERT INTO config (clave, valor) VALUES ($1, $2) ON CONFLICT(clave) DO UPDATE SET valor = excluded.valor",
-      [clave, String(valor)],
-    );
-  }
+  await ejecutarLote(
+    Object.entries(cambios).map(([clave, valor]) => ({
+      sql: "INSERT INTO config (clave, valor) VALUES ($1, $2) ON CONFLICT(clave) DO UPDATE SET valor = excluded.valor",
+      parametros: [clave, String(valor)],
+    })),
+  );
 }

@@ -56,6 +56,12 @@ describe("normalizarDni", () => {
   ])("%s -> %s", (v, esperado) => expect(normalizarDni(v)).toEqual({ ok: true, dni: esperado }));
 
   it.each(["abc", "123", "1234567890"])("rechaza %s", (v) => expect(normalizarDni(v).ok).toBe(false));
+  it.each(["000000", "0000001", "00012345"])("los ceros a la izquierda no cuentan como dígitos: rechaza %s", (v) => {
+    expect(normalizarDni(v).ok).toBe(false);
+  });
+  it("con ceros a la izquierda y suficientes dígitos los quita", () => {
+    expect(normalizarDni("012345678")).toEqual({ ok: true, dni: "12345678" });
+  });
 });
 
 describe("otros", () => {
