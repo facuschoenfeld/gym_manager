@@ -43,6 +43,7 @@ src/lib/                 utilidades PURAS con tests: fechas, dinero, telefonos, 
 src/components/          UI compartida (ui/ = shadcn, layout/, tema, notificar)
 src-tauri/src/lib.rs     solo registro de plugins, lista de migraciones y comandos
 src-tauri/src/lote.rs    comando ejecutar_lote (transacciones)
+reports/                 reportes de report-writer (subagentes y cierres de fase)
 ```
 
 ## Reglas de datos (obligatorias)
@@ -83,6 +84,27 @@ src-tauri/src/lote.rs    comando ejecutar_lote (transacciones)
   - Toast (`avisar.*`) para cada acción del usuario.
   - Notificación de Windows (`notificarWindows`) solo para tareas en segundo plano, como el respaldo automático.
 - Al terminar cada fase, listar: qué se hizo, cómo probarlo, qué queda pendiente, qué decisiones se tomaron y la RAM medida.
+
+## Automatización de subagentes (pedido explícito del usuario)
+Los subagentes son globales (`~/.claude/agents/`). Lanzarlos **sin preguntar** en estos casos:
+
+| Subagente | Cuándo lanzarlo | Qué pedirle |
+|---|---|---|
+| `ui-ux-reviewer` | Al terminar cada pantalla **o** al modificar cualquier aspecto del frontend (componentes, estilos, textos, layout) | Auditar contra RNF-03 y la sección 9 de la especificación: botones y fuentes grandes, contraste alto, estados con color + texto + ícono, confirmaciones, mensajes de error entendibles, estados vacío/carga/error, modo oscuro y atajos de teclado |
+| `code-reviewer` | Después de escribir cada bloque de código y **antes de cada commit** de una funcionalidad | Revisar el `git diff`: bugs, reglas de datos de este archivo (fechas, centavos, baja lógica, transacciones con `ejecutarLote`) y convenciones (sin `any` ni `!`) |
+| `test-runner` | Cada vez que se agrega o cambia lógica | Testear la lógica nueva (escribir los tests que falten) y confirmar la integridad del sistema: `pnpm test`, `pnpm typecheck` y `pnpm lint` en verde |
+| `researcher` | Cuando el usuario haga una **pregunta** sobre el sistema, el código, las herramientas o cualquier tema relacionado | Responder la pregunta. El agente principal (Opus) queda reservado para **ejecutar fases**. Excepción: si la respuesta requiere ejecutar comandos (medir RAM, ver procesos o versiones), `researcher` no puede porque no tiene Bash; lo resuelve el agente principal y lo aclara |
+| `security-auditor` | **No automatizar.** Recomendárselo al usuario cuando haga falta | Ejemplos: antes del instalador (fase 7), al tocar permisos de Tauri (`capabilities/`, alcance de `fs`), la CSP, la importación de archivos, la restauración de respaldos o al agregar dependencias |
+
+**Orden al implementar:** escribir el código → `test-runner` (si hay lógica) → `ui-ux-reviewer` (si hay frontend) → corregir lo que reporten → `code-reviewer` → corregir → commit.
+
+**Reporte después de cada subagente:** cuando termina **cada** subagente, lanzar `report-writer` para documentar todos los cambios realizados: qué revisó o hizo el subagente, qué encontró, qué se corrigió y qué quedó pendiente.
+- **Dónde:** carpeta `reports/` en la raíz del proyecto (se versiona en git).
+- **Nombre del archivo:** `reports/AAAA-MM-DD_HHMM_<subagente>_<tema-corto>.md`. Ejemplo: `reports/2026-11-03_1015_ui-ux-reviewer_pantalla-socios.md`.
+- El reporte de cierre de cada fase también va ahí: `reports/AAAA-MM-DD_HHMM_fase-N_cierre.md`.
+- Se commitea junto con los cambios a los que se refiere.
+
+Esto es una instrucción para Claude, no un hook de Claude Code: depende de que el agente principal la cumpla en cada sesión.
 
 ## Particularidades técnicas (aprendidas)
 - **Transacciones:** plugin-sql usa un pool de 10 conexiones sin API de transacciones, así que **nunca** hay que mandar `BEGIN`/`COMMIT` con `ejecutar()`. Toda operación de varias sentencias (registrar pago, importar, etc.) va con `ejecutarLote([{ sql, parametros }])` de `src/db/client.ts`: se aplica todo o nada. Dentro de un lote, para referirse a filas recién insertadas se usan subconsultas o `last_insert_rowid()`. La verificación está en `src/db/diagnostico.ts` (botón en Inicio, solo en desarrollo).
