@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { actualizarPlan, cambiarActivoPlan, crearPlan, listarPlanes } from "@/db/queries/planes";
+import { actualizarPlan, cambiarActivoPlan, crearPlan, eliminarPlan, listarPlanes } from "@/db/queries/planes";
 import { CLAVE_SOCIOS } from "@/features/socios/hooks";
 import type { DatosPlan } from "./logica/plan";
 
@@ -27,6 +27,14 @@ export function useCambiarActivoPlan() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, activo }: { id: number; activo: boolean }) => cambiarActivoPlan(id, activo),
+    onSuccess: () => qc.invalidateQueries({ queryKey: CLAVE_PLANES }),
+  });
+}
+
+export function useEliminarPlan() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => eliminarPlan(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: CLAVE_PLANES }),
   });
 }

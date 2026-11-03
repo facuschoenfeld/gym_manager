@@ -69,3 +69,29 @@ function normalizar(t: string): string {
 export function planesElegibles(planes: Plan[], planActualId: number | null): Plan[] {
   return planes.filter((p) => p.activo || p.id === planActualId);
 }
+
+// ---------------------------------------------------------------------------
+// Eliminar planes
+// ---------------------------------------------------------------------------
+
+/** Cuántos socios (activos e inactivos) y pagos (incluidos los anulados) usan un plan. */
+export interface UsoDelPlan {
+  sociosActivos: number;
+  sociosTotales: number;
+  pagos: number;
+}
+
+export type ResultadoEliminar = { puede: true } | { puede: false; motivo: string };
+
+/**
+ * Un plan solo se puede eliminar si nunca se usó: ningún socio lo tiene asignado
+ * (ni siquiera dados de baja) y ningún pago lo registra. Si no, se borraría parte
+ * del historial: en ese caso hay que desactivarlo.
+ */
+export function puedeEliminarPlan(uso: UsoDelPlan): ResultadoEliminar {
+  const partes: string[] = [];
+  if (uso.sociosTotales > 0) partes.push(uso.sociosTotales === 1 ? "1 socio lo tiene asignado" : `${uso.sociosTotales} socios lo tienen asignado`);
+  if (uso.pagos > 0) partes.push(uso.pagos === 1 ? "hay 1 pago registrado con este plan" : `hay ${uso.pagos} pagos registrados con este plan`);
+  if (partes.length === 0) return { puede: true };
+  return { puede: false, motivo: `No se puede eliminar porque ${partes.join(" y ")}.` };
+}

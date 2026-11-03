@@ -50,9 +50,9 @@ reports/                 reportes de report-writer (subagentes y cierres de fase
 1. **Fechas en ISO `YYYY-MM-DD`** en la base (fecha + hora: `YYYY-MM-DD HH:MM:SS`). Se muestran `DD/MM/YYYY` con `formatearFecha`. "Hoy" se obtiene con `hoyISO()` (hora local). **Nunca** usar `toISOString()` para fechas. En SQL siempre `date('now','localtime')`.
 2. **Dinero en centavos (INTEGER)**. Se formatea solo en la UI con `formatearPesos` (es-AR).
 3. **El estado del socio no se guarda**. Se calcula con `calcularEstado()` (`src/lib/estado.ts`, única fuente de verdad) a partir del `MAX(vence_el)` de los pagos no anulados (vista `v_clientes_vencimiento`).
-4. Socios y planes: **baja lógica** (`activo = 0`). Pagos: **no se borran**, se anulan con motivo.
+4. Socios: **baja lógica** (`activo = 0`), nunca se borran. Planes: baja lógica; **solo se pueden eliminar si nunca se usaron** (sin socios, ni siquiera dados de baja, y sin pagos; `puedeEliminarPlan` y el `DELETE` con `NOT EXISTS`). Pagos: **no se borran**, se anulan con motivo.
 5. Los pagos son historial: una fila por pago. Cada pago guarda su `monto` y su `plan_id`, así que cambiar un plan no altera los pagos anteriores.
-6. Teléfonos en formato internacional `549` + 10 dígitos (`normalizarTelefono`). DNI sin puntos; si está vacío, `NULL`.
+6. Teléfonos en formato internacional `549` + 10 dígitos (`normalizarTelefono`). DNI guardado sin puntos; si está vacío, `NULL`. Al cargarlo se aceptan solo `30123456`, `30.123.456`, `30 123 456` o `30123456.0` (Excel): la puntuación mal puesta es un error (`normalizarDni`).
 7. Migraciones: **nunca editar una publicada**. Crear `00N_x.sql` y agregarla en `migraciones()` de `lib.rs`.
 
 ## Reglas de negocio
@@ -81,7 +81,7 @@ reports/                 reportes de report-writer (subagentes y cierres de fase
   - Confirmar antes de anular, dar de baja, restaurar o importar.
   - Errores entendibles con `avisar.error(titulo, e)` (`src/components/notificar.ts`), nunca solo en la consola.
 - Notificaciones:
-  - Toast (`avisar.*`) para cada acción del usuario.
+  - Toast (`avisar.*`) para cada acción del usuario. **Sin botón de cerrar ni "Deshacer"**: aparecen y desaparecen solos (pedido del usuario, 2026-11-03).
   - Notificación de Windows (`notificarWindows`) solo para tareas en segundo plano, como el respaldo automático.
 - Al terminar cada fase, listar: qué se hizo, cómo probarlo, qué queda pendiente, qué decisiones se tomaron y la RAM medida.
 
@@ -126,7 +126,10 @@ Pagos online, Mercado Pago o QR · envío automático de email o WhatsApp (solo 
 ## Decisiones tomadas con el usuario
 - **Planes:** ABM flexible (período × cantidad + precio). Se crean de entrada "Pase diario", "Semanal" y "Mensual", con precio 0.
 - **Mes calendario** para los vencimientos, no 30 días fijos.
-- **Notificaciones (RNF-08):** toast para cada acción y notificación de Windows solo para tareas en segundo plano.
+- **Notificaciones (RNF-08):** toast para cada acción y notificación de Windows solo para tareas en segundo plano. Los toasts no tienen botón de cerrar ni "Deshacer".
+- **Eliminar planes:** solo los que nunca se usaron; los usados se desactivan (para no perder historial).
+- **Cambios sin guardar:** el aviso ofrece "Guardar y salir", "Salir sin guardar" y "Seguir editando".
+- **Etiqueta del estado `pago`:** se muestra "Al día" (el documento dice "Pago"). **Falta que el usuario lo confirme.** Se cambia en `VISUAL_ESTADO` (`EstadoBadge.tsx`).
 - **Instalador:** NSIS en español con `embedBootstrapper` de WebView2. La PC del gimnasio tiene internet al instalar.
 - **Transacciones:** opción A, un comando Rust propio (`ejecutar_lote`), en lugar de lotes SQL con `INSERT OR ROLLBACK`.
 - **RAM:** se acepta `--disable-gpu`. Bajar de 100 MB no es viable con WebView2.
@@ -179,5 +182,5 @@ En dev el renderer pesa más (~88 MB contra ~33 MB en release) por React en modo
 - Barra lateral colapsable (prioridad baja, la ventana mínima es de 1024 px).
 - Probar `window.print()` en WebView2 con `--disable-gpu` (fase 4, vista imprimible).
 - Probar el instalador en Windows 10 1909 real o en una VM (fase 7). Lo ideal es la PC del gimnasio.
-- El Excel real del gimnasio, para ajustar el mapeo por defecto (fase 5).
+- El Excel real del gimnasio, para ajustar el mapeo por defecto (fase 5). Con ese archivo, revisar si los DNI vienen como `30-123-456` o `30,123,456`: hoy `normalizarDni` los rechaza. Si aparecen, agregar esos formatos.
 - Dónde publicar las actualizaciones (fase 7; se sugirió GitHub Releases).

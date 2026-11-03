@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { esquemaPlan, nombreDePlanRepetido, planesElegibles, PRECIO_MAXIMO_CENTAVOS, type Plan } from "./plan";
+import {
+  esquemaPlan,
+  nombreDePlanRepetido,
+  planesElegibles,
+  PRECIO_MAXIMO_CENTAVOS,
+  puedeEliminarPlan,
+  type Plan,
+} from "./plan";
 
 const valido = { nombre: "Mensual", periodo: "mes", cantidad: "1", monto: "25000" };
 
@@ -121,5 +128,37 @@ describe("planesElegibles", () => {
 
   it("ignora un plan actual inexistente", () => {
     expect(planesElegibles(planes, 99).map((p) => p.id)).toEqual([1]);
+  });
+});
+
+describe("puedeEliminarPlan", () => {
+  it("un plan sin socios ni pagos se puede eliminar", () => {
+    expect(puedeEliminarPlan({ sociosActivos: 0, sociosTotales: 0, pagos: 0 })).toEqual({ puede: true });
+  });
+  it("no se puede si lo tiene un socio, aunque esté dado de baja", () => {
+    expect(puedeEliminarPlan({ sociosActivos: 0, sociosTotales: 1, pagos: 0 })).toEqual({
+      puede: false,
+      motivo: "No se puede eliminar porque 1 socio lo tiene asignado.",
+    });
+  });
+  it("no se puede si hay pagos con ese plan (aunque ningún socio lo tenga hoy)", () => {
+    expect(puedeEliminarPlan({ sociosActivos: 0, sociosTotales: 0, pagos: 3 })).toEqual({
+      puede: false,
+      motivo: "No se puede eliminar porque hay 3 pagos registrados con este plan.",
+    });
+  });
+  it("no se puede con socios activos (singular y plural)", () => {
+    const r = puedeEliminarPlan({ sociosActivos: 5, sociosTotales: 5, pagos: 0 });
+    expect(r).toEqual({ puede: false, motivo: "No se puede eliminar porque 5 socios lo tienen asignado." });
+  });
+  it("1 pago usa el singular", () => {
+    const r = puedeEliminarPlan({ sociosActivos: 0, sociosTotales: 0, pagos: 1 });
+    expect(r).toEqual({ puede: false, motivo: "No se puede eliminar porque hay 1 pago registrado con este plan." });
+  });
+  it("explica ambos motivos", () => {
+    expect(puedeEliminarPlan({ sociosActivos: 2, sociosTotales: 2, pagos: 1 })).toEqual({
+      puede: false,
+      motivo: "No se puede eliminar porque 2 socios lo tienen asignado y hay 1 pago registrado con este plan.",
+    });
   });
 });

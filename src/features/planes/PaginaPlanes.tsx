@@ -1,27 +1,57 @@
-import { useState } from "react";
-import { CircleCheck, CircleOff, Pencil, Plus, PowerOff, RotateCcw, Tags, TriangleAlert } from "lucide-react";
-import { Confirmar } from "@/components/Confirmar";
+import { useRef, useState } from "react";
+import { CircleCheck, CircleOff, Ellipsis, Pencil, Plus, PowerOff, RotateCcw, Tags, Trash2, TriangleAlert } from "lucide-react";
+import { Confirmar, type AccionConfirmar } from "@/components/Confirmar";
 import { Cargando, ErrorCarga, Vacio } from "@/components/EstadosCarga";
 import { Pagina } from "@/components/layout/Pagina";
 import { avisar } from "@/components/notificar";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { contarSociosConPlan } from "@/db/queries/planes";
+import { usoDelPlan } from "@/db/queries/planes";
 import { formatearPesos } from "@/lib/dinero";
 import { describirPeriodo } from "@/lib/fechas";
 import { FormularioPlanDialogo } from "./FormularioPlan";
-import { useCambiarActivoPlan, usePlanes } from "./hooks";
-import type { Plan } from "./logica/plan";
+import { useCambiarActivoPlan, useEliminarPlan, usePlanes } from "./hooks";
+import { puedeEliminarPlan, type Plan, type ResultadoEliminar, type UsoDelPlan } from "./logica/plan";
 
 export function PaginaPlanes() {
   const planes = usePlanes();
   const cambiarActivo = useCambiarActivoPlan();
+  const eliminar = useEliminarPlan();
   const [editando, setEditando] = useState<{ plan: Plan | null } | null>(null);
-  const [aDesactivar, setADesactivar] = useState<{ plan: Plan; socios: number } | null>(null);
+  // Los datos de cada diálogo se conservan al cerrarlo (solo cambia `abierto`), para que
+  // el contenido no se vacíe durante la animación de cierre.
+  const [desactivar, setDesactivar] = useState<{ abierto: boolean; plan: Plan; uso: UsoDelPlan } | null>(null);
+  const [borrar, setBorrar] = useState<{
+    abierto: boolean;
+    plan: Plan;
+    resultado: ResultadoEliminar;
+    eliminado?: boolean;
+  } | null>(null);
+  const cerrarDesactivar = () => setDesactivar((d) => d && { ...d, abierto: false });
+  const cerrarBorrar = () => setBorrar((d) => d && { ...d, abierto: false });
+
+  // Al cerrar un diálogo, el foco vuelve al botón "⋯" de la fila (o a "Nuevo plan" si el plan se eliminó).
+  const disparador = useRef<HTMLElement | null>(null);
+  const botonNuevo = useRef<HTMLButtonElement>(null);
 
   const pedirDesactivar = async (plan: Plan) => {
     try {
-      setADesactivar({ plan, socios: await contarSociosConPlan(plan.id) });
+      setDesactivar({ abierto: true, plan, uso: await usoDelPlan(plan.id) });
+    } catch (e) {
+      avisar.error("No se pudo consultar el plan", e);
+    }
+  };
+
+  const pedirEliminar = async (plan: Plan) => {
+    try {
+      setBorrar({ abierto: true, plan, resultado: puedeEliminarPlan(await usoDelPlan(plan.id)) });
     } catch (e) {
       avisar.error("No se pudo consultar el plan", e);
     }
@@ -30,18 +60,22 @@ export function PaginaPlanes() {
   const aplicarActivo = async (plan: Plan, activo: boolean) => {
     try {
       await cambiarActivo.mutateAsync({ id: plan.id, activo });
-      avisar.exito(activo ? `Plan "${plan.nombre}" reactivado` : `Plan "${plan.nombre}" desactivado`, {
-        accion: {
-          etiqueta: "Deshacer",
-          alHacerClic: () =>
-            void cambiarActivo
-              .mutateAsync({ id: plan.id, activo: !activo })
-              .catch((e: unknown) => avisar.error("No se pudo deshacer", e)),
-        },
-      });
-      setADesactivar(null);
+      avisar.exito(activo ? `Plan "${plan.nombre}" reactivado` : `Plan "${plan.nombre}" desactivado`);
+      cerrarDesactivar();
+      cerrarBorrar();
     } catch (e) {
       avisar.error("No se pudo cambiar el plan", e);
+    }
+  };
+
+  const aplicarEliminar = async (plan: Plan) => {
+    try {
+      await eliminar.mutateAsync(plan.id);
+      avisar.exito(`Plan "${plan.nombre}" eliminado`);
+      // La fila (y su botón "⋯") desaparece: el foco va a "Nuevo plan".
+      setBorrar((d) => d && { ...d, abierto: false, eliminado: true });
+    } catch (e) {
+      avisar.error("No se pudo eliminar el plan", e);
     }
   };
 
@@ -50,7 +84,7 @@ export function PaginaPlanes() {
       titulo="Planes"
       descripcion="Cada plan define cada cuánto paga el socio y cuánto cuesta."
       acciones={
-        <Button size="lg" onClick={() => setEditando({ plan: null })}>
+        <Button ref={botonNuevo} size="lg" onClick={() => setEditando({ plan: null })}>
           <Plus aria-hidden /> Nuevo plan
         </Button>
       }
@@ -103,19 +137,44 @@ export function PaginaPlanes() {
                     )}
                   </TableCell>
                   <TableCell className="text-right">
+                    {/* "Editar" a la vista; las acciones menos frecuentes (y la irreversible) en un menú,
+                        para que no estén pegadas y no se toquen por error. */}
                     <div className="flex justify-end gap-2">
                       <Button variant="outline" aria-label={`Editar plan ${p.nombre}`} onClick={() => setEditando({ plan: p })}>
                         <Pencil aria-hidden /> Editar
                       </Button>
-                      {p.activo ? (
-                        <Button variant="outline" aria-label={`Desactivar plan ${p.nombre}`} onClick={() => void pedirDesactivar(p)}>
-                          <PowerOff aria-hidden /> Desactivar
-                        </Button>
-                      ) : (
-                        <Button variant="outline" aria-label={`Reactivar plan ${p.nombre}`} onClick={() => void aplicarActivo(p, true)}>
-                          <RotateCcw aria-hidden /> Reactivar
-                        </Button>
-                      )}
+                      {/* modal={false}: el menú abre diálogos; así no quedan dos capas modales peleando por el foco. */}
+                      <DropdownMenu modal={false}>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            aria-label={`Más acciones para el plan ${p.nombre}`}
+                            onClick={(e) => (disparador.current = e.currentTarget)}
+                          >
+                            <Ellipsis aria-hidden />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="min-w-52">
+                          {p.activo ? (
+                            <DropdownMenuItem className="py-2.5 text-base" onSelect={() => void pedirDesactivar(p)}>
+                              <PowerOff aria-hidden className="size-5" /> Desactivar
+                            </DropdownMenuItem>
+                          ) : (
+                            <DropdownMenuItem className="py-2.5 text-base" onSelect={() => void aplicarActivo(p, true)}>
+                              <RotateCcw aria-hidden className="size-5" /> Reactivar
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            variant="destructive"
+                            className="py-2.5 text-base text-red-700 focus:text-red-800 dark:text-red-400 dark:focus:text-red-300 [&_svg]:!text-current"
+                            onSelect={() => void pedirEliminar(p)}
+                          >
+                            <Trash2 aria-hidden className="size-5" /> Eliminar
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -133,19 +192,76 @@ export function PaginaPlanes() {
       />
 
       <Confirmar
-        abierto={aDesactivar !== null}
-        alCambiar={(a) => !a && setADesactivar(null)}
-        titulo={`¿Desactivar el plan "${aDesactivar?.plan.nombre ?? ""}"?`}
+        abierto={desactivar?.abierto ?? false}
+        alCambiar={(a) => !a && cerrarDesactivar()}
+        titulo={`¿Desactivar el plan "${desactivar?.plan.nombre ?? ""}"?`}
         descripcion={
-          aDesactivar && aDesactivar.socios > 0
-            ? `${aDesactivar.socios} socio(s) activo(s) tienen este plan y lo van a conservar. Los socios nuevos ya no podrán elegirlo. Podés reactivarlo cuando quieras.`
+          desactivar && desactivar.uso.sociosActivos > 0
+            ? `${desactivar.uso.sociosActivos === 1 ? "1 socio activo tiene" : `${desactivar.uso.sociosActivos} socios activos tienen`} este plan y lo van a conservar. Los socios nuevos ya no podrán elegirlo. Podés reactivarlo cuando quieras.`
             : "Los socios nuevos ya no podrán elegirlo. Podés reactivarlo cuando quieras."
         }
-        textoConfirmar="Desactivar"
-        peligroso
+        accion={
+          desactivar
+            ? { texto: "Desactivar", peligroso: true, alConfirmar: () => void aplicarActivo(desactivar.plan, false) }
+            : undefined
+        }
         procesando={cambiarActivo.isPending}
-        alConfirmar={() => aDesactivar && void aplicarActivo(aDesactivar.plan, false)}
+        focoAlCerrar={disparador}
+      />
+
+      {/* Un solo diálogo, siempre montado: cambia el contenido según se pueda eliminar o no. */}
+      <Confirmar
+        abierto={borrar?.abierto ?? false}
+        alCambiar={(a) => !a && cerrarBorrar()}
+        procesando={eliminar.isPending || cambiarActivo.isPending}
+        focoAlCerrar={borrar?.eliminado ? botonNuevo : disparador}
+        {...propsDialogoEliminar(borrar, {
+          eliminar: (plan) => void aplicarEliminar(plan),
+          desactivar: (plan) => void aplicarActivo(plan, false),
+        })}
       />
     </Pagina>
   );
+}
+
+interface AccionesEliminar {
+  eliminar: (plan: Plan) => void;
+  desactivar: (plan: Plan) => void;
+}
+
+interface PropsEliminar {
+  titulo: string;
+  descripcion: string;
+  accion?: AccionConfirmar;
+  textoCancelar?: string;
+}
+
+/** Textos y acción del diálogo de eliminar, según el plan se pueda borrar o no. */
+function propsDialogoEliminar(
+  estado: { plan: Plan; resultado: ResultadoEliminar } | null,
+  acciones: AccionesEliminar,
+): PropsEliminar {
+  if (!estado) return { titulo: "", descripcion: "" };
+  const { plan, resultado } = estado;
+  if (resultado.puede) {
+    return {
+      titulo: `¿Eliminar el plan "${plan.nombre}"?`,
+      descripcion: "Este plan nunca se usó, así que se puede borrar. Esta acción no se puede deshacer.",
+      accion: { texto: "Eliminar", peligroso: true, alConfirmar: () => acciones.eliminar(plan) },
+    };
+  }
+  const titulo = `No se puede eliminar "${plan.nombre}"`;
+  if (!plan.activo) {
+    return {
+      titulo,
+      textoCancelar: "Cerrar",
+      descripcion: `${resultado.motivo} Así se conserva el historial de pagos. El plan ya está desactivado.`,
+    };
+  }
+  return {
+    titulo,
+    textoCancelar: "Cerrar",
+    descripcion: `${resultado.motivo} Así se conserva el historial de pagos. Podés desactivarlo: los socios que ya lo tienen lo conservan, pero los nuevos no podrán elegirlo.`,
+    accion: { texto: "Desactivar plan", alConfirmar: () => acciones.desactivar(plan) },
+  };
 }

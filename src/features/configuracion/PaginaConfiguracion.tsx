@@ -42,7 +42,7 @@ export function PaginaConfiguracion() {
 
 function FormularioGeneral({ config }: { config: Config }) {
   const guardar = useGuardarConfig();
-  const { register, handleSubmit, reset, watch, getValues, formState } = useForm<
+  const { register, handleSubmit, reset, watch, getValues, setFocus, formState } = useForm<
     FormularioConfiguracion,
     unknown,
     DatosConfiguracion
@@ -54,19 +54,46 @@ function FormularioGeneral({ config }: { config: Config }) {
 
   useEffect(() => reset(configAFormulario(config)), [config, reset]);
 
-  const enviar = handleSubmit(async (datos) => {
+  /** Guarda y devuelve si salió bien. */
+  const guardarDatos = async (datos: DatosConfiguracion): Promise<boolean> => {
     try {
       await guardar.mutateAsync(datos);
       reset(getValues()); // lo guardado pasa a ser el nuevo punto de partida (ya no hay cambios pendientes)
       avisar.exito("Configuración guardada");
+      return true;
     } catch (error) {
       avisar.error("No se pudo guardar la configuración", error);
+      return false;
     }
+  };
+
+  const enviar = handleSubmit(async (datos) => {
+    await guardarDatos(datos);
   });
 
   const regla = watch("regla_vencimiento");
   // Si hay cambios sin guardar, avisar antes de salir (menú lateral o atajos de teclado).
-  const salida = useBlocker(formState.isDirty && !formState.isSubmitting);
+  // El bloqueo NO depende de isSubmitting: si se desactivara durante "Guardar y salir",
+  // el diálogo se cerraría a mitad del guardado. Mientras está "blocked" el router no lo
+  // vuelve a evaluar, así que después de guardar se continúa con `proceed`, que repite la
+  // navegación pedida tal cual (con su estado: ej. Ctrl+N abre el alta de socio).
+  const salida = useBlocker(formState.isDirty);
+
+  const guardarYSalir = () => {
+    void handleSubmit(
+      async (datos) => {
+        if (await guardarDatos(datos)) salida.proceed?.();
+        else salida.reset?.();
+      },
+      (errores) => {
+        salida.reset?.();
+        avisar.error("Hay campos con errores. Corregilos para poder guardar.");
+        // Llevar el cursor al primer campo con error (después de que se cierre el diálogo).
+        const primero = Object.keys(errores)[0] as keyof FormularioConfiguracion | undefined;
+        if (primero) setTimeout(() => setFocus(primero), 50);
+      },
+    )();
+  };
 
   return (
     <form onSubmit={enviar} noValidate className="flex flex-col gap-6">
@@ -185,10 +212,11 @@ function FormularioGeneral({ config }: { config: Config }) {
         abierto={salida.state === "blocked"}
         alCambiar={(abierto) => !abierto && salida.reset?.()}
         titulo="Tenés cambios sin guardar"
-        descripcion="Si salís ahora, los cambios de la configuración se pierden."
-        textoConfirmar="Salir sin guardar"
-        peligroso
-        alConfirmar={() => salida.proceed?.()}
+        descripcion="¿Querés guardar los cambios de la configuración antes de salir?"
+        textoCancelar="Seguir editando"
+        secundaria={{ texto: "Salir sin guardar", peligroso: true, alConfirmar: () => salida.proceed?.() }}
+        accion={{ texto: "Guardar y salir", alConfirmar: guardarYSalir }}
+        procesando={formState.isSubmitting}
       />
     </form>
   );

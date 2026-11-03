@@ -40,8 +40,12 @@ export function coincideBusqueda(consulta: string, ...campos: (string | null | u
     // "12.345.678" se busca como "12345678" (el DNI se guarda sin puntos)
     .map((p) => (/^[\d.]+$/.test(p) ? p.replace(/\./g, "") : p));
   if (palabras.length === 0) return true;
+  // Las "palabras" que eran solo puntos ("...") se ignoran ("juan ." busca "juan"). Si todas
+  // eran así, no hay nada que buscar: no coincide con nadie (en vez de mostrar a todos).
+  const utiles = palabras.filter((p) => p !== "");
+  if (utiles.length === 0) return false;
   const pajar = normalizarBusqueda(campos.filter(Boolean).join(" "));
-  return palabras.every((p) => pajar.includes(p));
+  return utiles.every((p) => pajar.includes(p));
 }
 
 export function soloDigitos(texto: string | number | null | undefined): string {
@@ -50,17 +54,27 @@ export function soloDigitos(texto: string | number | null | undefined): string {
 
 export type ResultadoDni = { ok: true; dni: string | null } | { ok: false; motivo: string };
 
+/** Formatos aceptados: "30123456", "30.123.456", "30 123 456" y "30123456.0" (así lo exporta Excel). */
+const DNI_SOLO_DIGITOS = /^\d+$/;
+const DNI_CON_PUNTOS = /^\d{1,3}(\.\d{3})+$/;
+const DNI_CON_ESPACIOS = /^\d{1,3}( \d{3})+$/;
+const DNI_DECIMAL_EXCEL = /^(\d+)\.0+$/;
+
 /**
  * DNI sin puntos ni espacios. Vacío => null (es opcional).
  * Se aceptan entre 6 y 9 dígitos (DNI viejos, nuevos y algunos extranjeros).
- * Excel a veces lo trae como número (12345678) o con decimales ("12345678.0").
+ * La puntuación tiene que estar bien puesta: "3.0.1.2.3.4.5" o "30..123" no son válidos.
  */
 export function normalizarDni(entrada: string | number | null | undefined): ResultadoDni {
-  let t = limpiarEspacios(String(entrada ?? ""));
+  const t = limpiarEspacios(String(entrada ?? ""));
   if (t === "") return { ok: true, dni: null };
-  t = t.replace(/\.0+$/, "");
-  const digitos = soloDigitos(t);
-  if (digitos.length === 0) return { ok: false, motivo: "El DNI no tiene números" };
+  let digitos: string;
+  // El orden importa: "30.100.000" son miles (no el decimal ".000" de Excel).
+  if (DNI_SOLO_DIGITOS.test(t)) digitos = t;
+  else if (DNI_CON_PUNTOS.test(t) || DNI_CON_ESPACIOS.test(t)) digitos = soloDigitos(t);
+  else if (DNI_DECIMAL_EXCEL.test(t)) digitos = t.replace(DNI_DECIMAL_EXCEL, "$1");
+  else if (soloDigitos(t) === "") return { ok: false, motivo: "El DNI no tiene números" };
+  else return { ok: false, motivo: "Escribí el DNI solo con números (ej. 30123456) o con puntos (30.123.456)" };
   // Los ceros a la izquierda no cuentan: "0000001" no es un DNI válido.
   const d = digitos.replace(/^0+/, "");
   if (d.length < 6 || d.length > 9) return { ok: false, motivo: "El DNI debe tener entre 6 y 9 dígitos" };

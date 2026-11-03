@@ -90,7 +90,9 @@ export default function App() {
               </Button>
             </div>
           )}
-          <Toaster position="bottom-right" richColors closeButton />
+          {/* Los avisos aparecen y se van solos (sin botón de cerrar). Abajo a la izquierda, sobre el
+              menú lateral: así no tapan los botones de guardar, que están abajo a la derecha. */}
+          <Toaster position="bottom-left" richColors />
         </TooltipProvider>
       </QueryClientProvider>
     </ProveedorTema>

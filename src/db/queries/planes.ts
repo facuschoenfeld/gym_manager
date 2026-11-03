@@ -1,7 +1,7 @@
-/** Consultas de planes. Los planes no se borran: se desactivan (baja lógica). */
-import type { DatosPlan, Plan } from "@/features/planes/logica/plan";
+/** Consultas de planes. Un plan en uso no se borra: se desactiva. Solo se eliminan los que nunca se usaron. */
+import type { DatosPlan, Plan, UsoDelPlan } from "@/features/planes/logica/plan";
 import type { Periodo } from "@/lib/fechas";
-import { consultar, ejecutar } from "../client";
+import { consultar, consultarUno, ejecutar } from "../client";
 
 interface FilaPlan {
   id: number;
@@ -54,11 +54,36 @@ export async function cambiarActivoPlan(id: number, activo: boolean): Promise<vo
   await ejecutar("UPDATE planes SET activo = $1 WHERE id = $2", [activo ? 1 : 0, id]);
 }
 
-/** Cuántos socios activos tienen este plan (para avisar antes de desactivarlo). */
-export async function contarSociosConPlan(id: number): Promise<number> {
-  const filas = await consultar<{ n: number }>(
-    "SELECT COUNT(*) AS n FROM clientes WHERE plan_id = $1 AND activo = 1",
+/** Cuántos socios y pagos usan el plan (para avisar antes de desactivarlo o decidir si se puede eliminar). */
+export async function usoDelPlan(id: number): Promise<UsoDelPlan> {
+  const fila = await consultarUno<UsoDelPlan>(
+    `SELECT
+       (SELECT COUNT(*) FROM clientes WHERE plan_id = $1 AND activo = 1) AS sociosActivos,
+       (SELECT COUNT(*) FROM clientes WHERE plan_id = $1)                AS sociosTotales,
+       (SELECT COUNT(*) FROM pagos    WHERE plan_id = $1)                AS pagos`,
     [id],
   );
-  return filas[0]?.n ?? 0;
+  return fila ?? { sociosActivos: 0, sociosTotales: 0, pagos: 0 };
+}
+
+/**
+ * Borra un plan que nunca se usó. La condición se repite en el SQL para que sea imposible
+ * borrar un plan con socios o pagos aunque la interfaz fallara (y las claves foráneas lo impiden igual).
+ */
+export async function eliminarPlan(id: number): Promise<void> {
+  const r = await ejecutar(
+    `DELETE FROM planes
+     WHERE id = $1
+       AND NOT EXISTS (SELECT 1 FROM clientes WHERE plan_id = $1)
+       AND NOT EXISTS (SELECT 1 FROM pagos    WHERE plan_id = $1)`,
+    [id],
+  );
+  if (r.filasAfectadas === 1) return;
+  // No se borró: o ya no existe (ej. se eliminó en otra pantalla) o está en uso.
+  const existe = await consultarUno<{ id: number }>("SELECT id FROM planes WHERE id = $1", [id]);
+  throw new Error(
+    existe
+      ? "El plan no se puede eliminar porque tiene socios o pagos asociados. Podés desactivarlo."
+      : "El plan ya no existe (puede que se haya eliminado antes).",
+  );
 }

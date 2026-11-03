@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { ArrowLeft, Ban, Pencil, Receipt, UserCheck, UserX } from "lucide-react";
 import { Confirmar } from "@/components/Confirmar";
@@ -29,6 +29,7 @@ export function FichaSocio() {
   const navegar = useNavigate();
   const [editando, setEditando] = useState(false);
   const [confirmarBaja, setConfirmarBaja] = useState(false);
+  const botonBaja = useRef<HTMLButtonElement>(null);
   const hoy = hoyISO();
 
   if (socios.isPending) return <Pagina titulo="Socio"><Cargando texto="Cargando socio…" /></Pagina>;
@@ -46,16 +47,7 @@ export function FichaSocio() {
   const aplicarActivo = async (activo: boolean) => {
     try {
       await cambiarActivo.mutateAsync({ id: socio.id, activo });
-      avisar.exito(activo ? "Socio reactivado" : "Socio dado de baja", {
-        descripcion: nombreCompleto(socio),
-        accion: {
-          etiqueta: "Deshacer",
-          alHacerClic: () =>
-            void cambiarActivo
-              .mutateAsync({ id: socio.id, activo: !activo })
-              .catch((e: unknown) => avisar.error("No se pudo deshacer", e)),
-        },
-      });
+      avisar.exito(activo ? "Socio reactivado" : "Socio dado de baja", { descripcion: nombreCompleto(socio) });
       setConfirmarBaja(false);
     } catch (e) {
       avisar.error("No se pudo cambiar el estado del socio", e);
@@ -72,7 +64,7 @@ export function FichaSocio() {
             <Pencil aria-hidden /> Editar
           </Button>
           {socio.activo ? (
-            <Button size="lg" variant="outline" onClick={() => setConfirmarBaja(true)}>
+            <Button ref={botonBaja} size="lg" variant="outline" onClick={() => setConfirmarBaja(true)}>
               <UserX aria-hidden /> Dar de baja
             </Button>
           ) : (
@@ -154,10 +146,9 @@ export function FichaSocio() {
         alCambiar={setConfirmarBaja}
         titulo={`¿Dar de baja a ${nombreCompleto(socio)}?`}
         descripcion="No se borra nada: sus datos y pagos se conservan, y podés reactivarlo cuando vuelva. Deja de aparecer en el listado de socios activos y en los deudores."
-        textoConfirmar="Dar de baja"
-        peligroso
+        accion={{ texto: "Dar de baja", peligroso: true, alConfirmar: () => void aplicarActivo(false) }}
         procesando={cambiarActivo.isPending}
-        alConfirmar={() => void aplicarActivo(false)}
+        focoAlCerrar={botonBaja}
       />
     </Pagina>
   );

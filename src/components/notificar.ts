@@ -1,6 +1,7 @@
 /**
  * Avisos al usuario (RNF-08).
- *  - `avisar.*`: toast dentro de la app, para cada acción del usuario.
+ *  - `avisar.*`: toast dentro de la app, para cada acción del usuario. Aparece y se va solo:
+ *    sin botón de cerrar ni "Deshacer" (pedido del usuario).
  *  - `notificarWindows`: notificación nativa, SOLO para cosas que pasan en segundo plano
  *    (ej. respaldo automático). Si Windows no da permiso, se ignora en silencio.
  */
@@ -10,15 +11,10 @@ import { error as logError } from "@tauri-apps/plugin-log";
 
 interface OpcionesAviso {
   descripcion?: string;
-  /** Botón "Deshacer" (u otra acción) dentro del toast. */
-  accion?: { etiqueta: string; alHacerClic: () => void };
 }
 
 function opciones(o?: OpcionesAviso) {
-  return {
-    description: o?.descripcion,
-    action: o?.accion ? { label: o.accion.etiqueta, onClick: o.accion.alHacerClic } : undefined,
-  };
+  return { description: o?.descripcion };
 }
 
 /** Convierte cualquier error en un texto entendible. Pura: se puede usar al renderizar. */
@@ -37,13 +33,17 @@ export function registrarError(contexto: string, e: unknown): void {
   void logError(`[${contexto}] ${texto}`).catch(() => undefined);
 }
 
+// Duración en pantalla. No hay botón de cerrar, así que se deja tiempo para leer (el mouse encima los pausa).
+const DURACION = { exito: 6_000, info: 6_000, advertencia: 8_000, error: 10_000 } as const;
+
 export const avisar = {
-  exito: (titulo: string, o?: OpcionesAviso) => toast.success(titulo, opciones(o)),
-  info: (titulo: string, o?: OpcionesAviso) => toast.info(titulo, opciones(o)),
-  advertencia: (titulo: string, o?: OpcionesAviso) => toast.warning(titulo, opciones(o)),
+  exito: (titulo: string, o?: OpcionesAviso) => toast.success(titulo, { ...opciones(o), duration: DURACION.exito }),
+  info: (titulo: string, o?: OpcionesAviso) => toast.info(titulo, { ...opciones(o), duration: DURACION.info }),
+  advertencia: (titulo: string, o?: OpcionesAviso) =>
+    toast.warning(titulo, { ...opciones(o), duration: DURACION.advertencia }),
   error: (titulo: string, e?: unknown) => {
     if (e !== undefined) registrarError(titulo, e);
-    return toast.error(titulo, { description: e === undefined ? undefined : mensajeDeError(e), duration: 10_000 });
+    return toast.error(titulo, { description: e === undefined ? undefined : mensajeDeError(e), duration: DURACION.error });
   },
 };
 
