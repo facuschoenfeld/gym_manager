@@ -167,6 +167,14 @@ En dev el renderer pesa más (~88 MB contra ~33 MB en release) por React en modo
 | `d5e055d` | actualización de CLAUDE.md |
 
 ## Pendientes
+- **Seguridad, según `security-auditor` (2026-11-02):**
+  - **Alta:** `fs:scope` con `"**"` en `src-tauri/capabilities/default.json` da acceso a todo el disco con permisos de escritura y borrado. Hay que acotarlo a `$APPDATA/ar.gym.manager/**` y a la carpeta de respaldos. Resolverlo en la fase 6, cuando se defina cómo se elige esa carpeta (puede ser un pendrive).
+  - **Media:** acotar `fs:allow-remove` a la carpeta de respaldos o quitarlo si no se usa.
+- **UI, según `ui-ux-reviewer` (2026-11-02), sobre `Layout.tsx`:**
+  - Agregar el enlace "Saltar al contenido" y un `id` en `<main>`.
+  - Agregar `focus-visible` visible en los `NavLink`.
+  - Marcar la sección activa con un indicador que no sea solo color (por ejemplo una barra lateral).
+  - Resolverlo en la fase 2. La barra lateral colapsable es de prioridad baja, porque la ventana mínima es de 1024 px.
 - Probar `window.print()` en WebView2 con `--disable-gpu` (fase 4, vista imprimible).
 - Probar el instalador en Windows 10 1909 real o en una VM (fase 7). Lo ideal es la PC del gimnasio.
 - El Excel real del gimnasio, para ajustar el mapeo por defecto (fase 5).
