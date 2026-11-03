@@ -21,13 +21,22 @@ const DB_URL: &str = "sqlite:gym.db";
 /// solo las nuevas, cada una dentro de una transacción. Nunca editar una
 /// migración ya publicada: siempre crear una nueva.
 fn migraciones() -> Vec<Migration> {
-    vec![Migration {
-        version: 1,
-        description: "inicial",
-        // include_str! copia el contenido del .sql dentro del ejecutable al compilar.
-        sql: include_str!("../../src/db/migrations/001_inicial.sql"),
-        kind: MigrationKind::Up,
-    }]
+    vec![
+        Migration {
+            version: 1,
+            description: "inicial",
+            // include_str! copia el contenido del .sql dentro del ejecutable al compilar.
+            sql: include_str!("../../src/db/migrations/001_inicial.sql"),
+            kind: MigrationKind::Up,
+        },
+        Migration {
+            version: 2,
+            description: "codigo_area",
+            // Código de área por defecto del gimnasio (3482, Reconquista).
+            sql: include_str!("../../src/db/migrations/002_codigo_area.sql"),
+            kind: MigrationKind::Up,
+        },
+    ]
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

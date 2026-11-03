@@ -102,13 +102,14 @@ Pagos online, Mercado Pago o QR · envío automático de email o WhatsApp (solo 
 - **Instalador:** NSIS en español con `embedBootstrapper` de WebView2. La PC del gimnasio tiene internet al instalar.
 - **Transacciones:** opción A, un comando Rust propio (`ejecutar_lote`), en lugar de lotes SQL con `INSERT OR ROLLBACK`.
 - **RAM:** se acepta `--disable-gpu`. Bajar de 100 MB no es viable con WebView2.
+- **Código de área por defecto: 3482** (Reconquista, Santa Fe; 6 dígitos locales). Se cargó con la migración `002_codigo_area.sql` y se puede cambiar desde la configuración.
 - Las fechas se guardan en `YYYY-MM-DD`, aunque el .md original dice "ISO (DD-MM-YYYY)", que es contradictorio.
 
 ## Estado actual
 | Fase | Estado |
 |---|---|
 | 0. Esqueleto y entorno | ✅ Cerrada (2026-11-02) |
-| 1. Base de datos y lógica pura | ✅ Hecha dentro de la fase 0 (migración 001, `src/lib/*` con 133 tests). Faltan los esquemas Zod de formularios, que se hacen en la fase 2. |
+| 1. Base de datos y lógica pura | ✅ Hecha dentro de la fase 0 (migraciones 001 y 002, `src/lib/*` con 144 tests). Faltan los esquemas Zod de formularios, que se hacen en la fase 2. |
 | 2. Planes, configuración y socios | ⏭️ Siguiente |
 | 3. Pagos | Pendiente |
 | 4. Panel de deudores y avisos por WhatsApp | Pendiente. La pantalla de Inicio hoy es solo de diagnóstico (base, migraciones y prueba de transacciones en desarrollo). |
@@ -141,9 +142,9 @@ En dev el renderer pesa más (~88 MB contra ~33 MB en release) por React en modo
 | `f31a9db` | `ejecutar_lote` |
 | `18085d8` | `--disable-gpu` |
 | `bb7080a` | quitar `rust-analyzer` de las recomendaciones |
+| `d5e055d` | actualización de CLAUDE.md |
 
 ## Pendientes
-- **Código de área por defecto** (`config.codigo_area`): se le preguntó al usuario la ciudad del gimnasio y todavía no respondió. Si no responde, queda vacío y se configura desde la app.
 - Probar `window.print()` en WebView2 con `--disable-gpu` (fase 4, vista imprimible).
 - Probar el instalador en Windows 10 1909 real o en una VM (fase 7). Lo ideal es la PC del gimnasio.
 - El Excel real del gimnasio, para ajustar el mapeo por defecto (fase 5).
