@@ -21,22 +21,30 @@ function opciones(o?: OpcionesAviso) {
   };
 }
 
-/** Convierte cualquier error en un texto entendible y lo registra en el log. */
+/** Convierte cualquier error en un texto entendible. Pura: se puede usar al renderizar. */
 export function mensajeDeError(e: unknown): string {
   const texto = e instanceof Error ? e.message : String(e);
-  void logError(texto).catch(() => undefined);
+  if (/CHECK constraint failed/i.test(texto)) return "Hay un dato con un formato inválido. Revisá los campos.";
   if (/UNIQUE constraint failed: clientes\.dni/i.test(texto)) return "Ya existe un socio con ese DNI.";
   if (/UNIQUE constraint failed: planes\.nombre/i.test(texto)) return "Ya existe un plan con ese nombre.";
   if (/database is locked/i.test(texto)) return "La base de datos está ocupada. Probá de nuevo en unos segundos.";
   return texto;
 }
 
+/** Registra el error en el archivo de log (una vez por error, no en cada render). */
+export function registrarError(contexto: string, e: unknown): void {
+  const texto = e instanceof Error ? (e.stack ?? e.message) : String(e);
+  void logError(`[${contexto}] ${texto}`).catch(() => undefined);
+}
+
 export const avisar = {
   exito: (titulo: string, o?: OpcionesAviso) => toast.success(titulo, opciones(o)),
   info: (titulo: string, o?: OpcionesAviso) => toast.info(titulo, opciones(o)),
   advertencia: (titulo: string, o?: OpcionesAviso) => toast.warning(titulo, opciones(o)),
-  error: (titulo: string, e?: unknown) =>
-    toast.error(titulo, { description: e === undefined ? undefined : mensajeDeError(e), duration: 10_000 }),
+  error: (titulo: string, e?: unknown) => {
+    if (e !== undefined) registrarError(titulo, e);
+    return toast.error(titulo, { description: e === undefined ? undefined : mensajeDeError(e), duration: 10_000 });
+  },
 };
 
 export async function notificarWindows(titulo: string, cuerpo: string): Promise<void> {

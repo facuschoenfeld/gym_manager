@@ -1,4 +1,4 @@
-import { NavLink, Outlet } from "react-router";
+import { NavLink, Outlet, useNavigate } from "react-router";
 import {
   Dumbbell,
   FileSpreadsheet,
@@ -10,6 +10,7 @@ import {
   Users,
   type LucideIcon,
 } from "lucide-react";
+import { useAtajos } from "@/components/atajos";
 import { useTema } from "@/components/tema";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -28,11 +29,34 @@ const MENU: ItemMenu[] = [
   { a: "/configuracion", etiqueta: "Configuración", icono: Settings },
 ];
 
+/** Estado de navegación que entienden las pantallas (ej. Socios enfoca el buscador o abre el alta). */
+export interface EstadoNavegacion {
+  accion?: "buscar" | "nuevo-socio";
+}
+
 export function Layout() {
   const { tema, alternarTema } = useTema();
+  const navegar = useNavigate();
+
+  useAtajos([
+    { tecla: "f", ctrl: true, accion: () => navegar("/socios", { state: { accion: "buscar" } satisfies EstadoNavegacion }) },
+    { tecla: "/", accion: () => navegar("/socios", { state: { accion: "buscar" } satisfies EstadoNavegacion }) },
+    { tecla: "n", ctrl: true, accion: () => navegar("/socios", { state: { accion: "nuevo-socio" } satisfies EstadoNavegacion }) },
+  ]);
 
   return (
     <div className="flex h-screen bg-background text-foreground">
+      <a
+        href="#contenido"
+        onClick={(e) => {
+          // Con HashRouter el hash es la ruta: no cambiarlo, solo mover el foco.
+          e.preventDefault();
+          document.getElementById("contenido")?.focus();
+        }}
+        className="sr-only z-50 rounded-lg bg-primary px-4 py-3 text-primary-foreground focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
+      >
+        Saltar al contenido
+      </a>
       <aside className="flex w-60 shrink-0 flex-col border-r bg-sidebar text-sidebar-foreground print:hidden">
         <div className="flex items-center gap-2 px-5 py-6">
           <Dumbbell className="size-7 text-primary" aria-hidden />
@@ -46,10 +70,12 @@ export function Layout() {
               end={a === "/"}
               className={({ isActive }) =>
                 cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-3 text-base font-medium transition-colors",
+                  // Borde izquierdo: indica la sección activa sin depender solo del color.
+                  "flex items-center gap-3 rounded-lg border-l-4 px-3 py-3 text-base font-medium transition-colors",
+                  "outline-none focus-visible:ring-3 focus-visible:ring-ring",
                   isActive
-                    ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                    : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                    ? "border-sidebar-primary-foreground/80 bg-sidebar-primary font-semibold text-sidebar-primary-foreground"
+                    : "border-transparent hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                 )
               }
             >
@@ -58,14 +84,22 @@ export function Layout() {
             </NavLink>
           ))}
         </nav>
-        <div className="p-3">
+        <div className="space-y-2 p-3">
+          <dl className="grid grid-cols-[auto_1fr] gap-x-2 px-3 text-sm text-muted-foreground">
+            <dt><kbd className="font-mono">Ctrl+F</kbd> o <kbd className="font-mono">/</kbd></dt>
+            <dd>Buscar socio</dd>
+            <dt><kbd className="font-mono">Ctrl+N</kbd></dt>
+            <dd>Nuevo socio</dd>
+            <dt><kbd className="font-mono">Esc</kbd></dt>
+            <dd>Cerrar ventana</dd>
+          </dl>
           <Button variant="ghost" className="w-full justify-start gap-3" onClick={alternarTema}>
             {tema === "claro" ? <Moon aria-hidden /> : <Sun aria-hidden />}
             {tema === "claro" ? "Modo oscuro" : "Modo claro"}
           </Button>
         </div>
       </aside>
-      <main className="flex-1 overflow-y-auto">
+      <main id="contenido" tabIndex={-1} className="flex-1 overflow-y-auto outline-none">
         <Outlet />
       </main>
     </div>

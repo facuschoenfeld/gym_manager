@@ -27,7 +27,7 @@ Windows 11 Pro · Node 22.14 · pnpm 12.16 · Rust 1.99 (`stable-x86_64-pc-windo
 pnpm 12 bloquea los scripts de instalación: los permitidos se declaran en `allowBuilds` de `pnpm-workspace.yaml` (hoy solo `esbuild`). Para agregar uno: `pnpm approve-builds <paquete> -y`.
 
 ## Stack
-Tauri 2 · React 19 + TS + Vite · Tailwind v4 + shadcn/ui (radix-nova, `cn` del paquete `cn`) · SQLite con `@tauri-apps/plugin-sql` · React Hook Form + Zod 4 · TanStack Query + Table · React Router (HashRouter) · date-fns · sonner (toasts) · lucide-react · SheetJS CE 0.20.3 (tarball de cdn.sheetjs.com, **no** la versión de npm; cargarlo con `import()` dinámico) · Vitest.
+Tauri 2 · React 19 + TS + Vite · Tailwind v4 + shadcn/ui (radix-nova, `cn` del paquete `cn`) · SQLite con `@tauri-apps/plugin-sql` · React Hook Form + Zod 4 · TanStack Query + **TanStack Table v9** · React Router 8 (`createHashRouter`, router de datos) · date-fns · sonner (toasts) · lucide-react · SheetJS CE 0.20.3 (tarball de cdn.sheetjs.com, **no** la versión de npm; cargarlo con `import()` dinámico) · Vitest.
 Plugins de Tauri: sql, dialog, fs, opener (solo `https://wa.me/*`), notification, log, process, single-instance. El updater queda para la fase 7.
 Único comando Rust propio: `ejecutar_lote` (`src-tauri/src/lote.rs`), que ejecuta varias sentencias en una transacción.
 **No usar:** Electron, servidor Node/Express, servicios externos, nada que necesite internet.
@@ -113,6 +113,12 @@ Esto es una instrucción para Claude, no un hook de Claude Code: depende de que 
 - Los PRAGMA no tienen efecto dentro de una migración (corren dentro de una transacción). Se aplican en `client.ts`.
 - **RAM:** WebView2 usa varios procesos y la aceleración por GPU ocupaba ~106 MB. Con `--disable-gpu` (en `additionalBrowserArgs` de `tauri.conf.json`) la app en release baja de ~216 MB a ~118 MB de memoria privada. Esas args reemplazan las que Tauri pone por defecto, así que hay que mantener `--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection`. Para medir: sumar la memoria privada de `gym-manager.exe` y de los `msedgewebview2.exe` cuya línea de comandos contiene `ar.gym.manager`.
 - La CSP no permite scripts inline: usar archivos en `public/` (por ejemplo `public/tema.js`).
+- **TanStack Table v9** cambió la API respecto de la v8. Se usa `useTable({ features, columns, data })`, `tableFeatures({})` y `createColumnHelper<typeof features, Fila>()` (features y helper a nivel de módulo), `row.getAllCells()` y `<tabla.FlexRender header|cell />`. La documentación está en `node_modules/@tanstack/react-table/skills/`.
+- **Router de datos:** las rutas están en `createHashRouter` (`App.tsx`) para poder usar `useBlocker` (aviso de cambios sin guardar, ver Configuración). Con HashRouter, el hash de la URL **es** la ruta: nunca usar `<a href="#...">` para anclas dentro de la página.
+- **Errores:** `mensajeDeError(e)` es pura (traduce el error para mostrarlo). `registrarError(contexto, e)` escribe en el log. El log se escribe una sola vez por error: en `avisar.error`, en `QueryCache.onError` y al abrir la base. Nunca registrar durante un render.
+- **Claves de TanStack Query:** usar las constantes (`CLAVE_SOCIOS`, `CLAVE_PAGOS`, `clavePagosDeSocio`, `CLAVE_PLANES`, `CLAVE_CONFIG`). Nunca escribir los strings a mano.
+- **Tamaños de UI:** los componentes de `src/components/ui` se agrandaron (botón default `h-11 text-base`, lg `h-12`, input `h-11`, tablas `text-base`). Los bordes de los campos usan `border-foreground/50` y el anillo de foco es azul (`--ring`), para cumplir WCAG AA. Si se agrega un componente con `shadcn add`, hay que ajustarlo igual.
+- La regla `react-hooks/incompatible-library` está desactivada en ESLint: es para el React Compiler, que no se usa, y TanStack Table y `watch()` de react-hook-form son incompatibles con él por diseño.
 
 ## Fuera de alcance
 Pagos online, Mercado Pago o QR · envío automático de email o WhatsApp (solo links `wa.me` manuales) · control de acceso o asistencias · facturación AFIP · multiusuario o login · versión web o móvil · nube. El diseño por capas tiene que permitir sumar cualquiera de estas cosas más adelante sin reescribir.
@@ -132,7 +138,7 @@ Pagos online, Mercado Pago o QR · envío automático de email o WhatsApp (solo 
 |---|---|
 | 0. Esqueleto y entorno | ✅ Cerrada (2026-11-02) |
 | 1. Base de datos y lógica pura | ✅ Hecha dentro de la fase 0 (migraciones 001 y 002, `src/lib/*` con 144 tests). Faltan los esquemas Zod de formularios, que se hacen en la fase 2. |
-| 2. Planes, configuración y socios | ⏭️ Siguiente |
+| 2. Planes, configuración y socios | 🔶 Implementada y revisada (test-runner, ui-ux-reviewer, code-reviewer). Falta la prueba manual del usuario y medir la RAM en release para cerrarla. |
 | 3. Pagos | Pendiente |
 | 4. Panel de deudores y avisos por WhatsApp | Pendiente. La pantalla de Inicio hoy es solo de diagnóstico (base, migraciones y prueba de transacciones en desarrollo). |
 | 5. Importación desde Excel | Pendiente |
@@ -170,11 +176,7 @@ En dev el renderer pesa más (~88 MB contra ~33 MB en release) por React en modo
 - **Seguridad, según `security-auditor` (2026-11-02):**
   - **Alta:** `fs:scope` con `"**"` en `src-tauri/capabilities/default.json` da acceso a todo el disco con permisos de escritura y borrado. Hay que acotarlo a `$APPDATA/ar.gym.manager/**` y a la carpeta de respaldos. Resolverlo en la fase 6, cuando se defina cómo se elige esa carpeta (puede ser un pendrive).
   - **Media:** acotar `fs:allow-remove` a la carpeta de respaldos o quitarlo si no se usa.
-- **UI, según `ui-ux-reviewer` (2026-11-02), sobre `Layout.tsx`:**
-  - Agregar el enlace "Saltar al contenido" y un `id` en `<main>`.
-  - Agregar `focus-visible` visible en los `NavLink`.
-  - Marcar la sección activa con un indicador que no sea solo color (por ejemplo una barra lateral).
-  - Resolverlo en la fase 2. La barra lateral colapsable es de prioridad baja, porque la ventana mínima es de 1024 px.
+- Barra lateral colapsable (prioridad baja, la ventana mínima es de 1024 px).
 - Probar `window.print()` en WebView2 con `--disable-gpu` (fase 4, vista imprimible).
 - Probar el instalador en Windows 10 1909 real o en una VM (fase 7). Lo ideal es la PC del gimnasio.
 - El Excel real del gimnasio, para ajustar el mapeo por defecto (fase 5).

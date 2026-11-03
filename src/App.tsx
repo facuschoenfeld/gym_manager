@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { HashRouter, Route, Routes } from "react-router";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { createHashRouter, RouterProvider } from "react-router";
+import { QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Loader2, TriangleAlert } from "lucide-react";
 import { obtenerDb } from "@/db/client";
-import { mensajeDeError } from "@/components/notificar";
+import { mensajeDeError, registrarError } from "@/components/notificar";
 import { ProveedorTema } from "@/components/tema";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -11,8 +11,14 @@ import { Button } from "@/components/ui/button";
 import { Layout } from "@/components/layout/Layout";
 import { EnConstruccion } from "@/components/layout/Pagina";
 import { PaginaInicio } from "@/features/deudores/PaginaInicio";
+import { PaginaConfiguracion } from "@/features/configuracion/PaginaConfiguracion";
+import { PaginaPlanes } from "@/features/planes/PaginaPlanes";
+import { FichaSocio } from "@/features/socios/FichaSocio";
+import { PaginaSocios } from "@/features/socios/PaginaSocios";
 
 const queryClient = new QueryClient({
+  // Cada error de lectura se registra en el log UNA vez (no en cada render de la pantalla de error).
+  queryCache: new QueryCache({ onError: (e, consulta) => registrarError(`consulta ${JSON.stringify(consulta.queryKey)}`, e) }),
   defaultOptions: {
     // Datos locales: no hace falta refrescar al volver a la ventana.
     queries: { refetchOnWindowFocus: false, retry: false, staleTime: 30_000 },
@@ -30,7 +36,10 @@ function useAbrirBase() {
     let vigente = true;
     obtenerDb()
       .then(() => vigente && setEstado({ tipo: "lista" }))
-      .catch((e: unknown) => vigente && setEstado({ tipo: "error", mensaje: mensajeDeError(e) }));
+      .catch((e: unknown) => {
+        registrarError("abrir base de datos", e);
+        if (vigente) setEstado({ tipo: "error", mensaje: mensajeDeError(e) });
+      });
     return () => {
       vigente = false;
     };
@@ -43,19 +52,20 @@ function useAbrirBase() {
   return { estado, reintentar };
 }
 
-function Rutas() {
-  return (
-    <Routes>
-      <Route element={<Layout />}>
-        <Route index element={<PaginaInicio />} />
-        <Route path="socios" element={<EnConstruccion titulo="Socios" fase={2} />} />
-        <Route path="planes" element={<EnConstruccion titulo="Planes" fase={2} />} />
-        <Route path="importar" element={<EnConstruccion titulo="Importar Excel" fase={5} />} />
-        <Route path="configuracion" element={<EnConstruccion titulo="Configuración" fase={2} />} />
-      </Route>
-    </Routes>
-  );
-}
+// Router "de datos": permite useBlocker (avisar antes de salir con cambios sin guardar).
+const router = createHashRouter([
+  {
+    element: <Layout />,
+    children: [
+      { index: true, element: <PaginaInicio /> },
+      { path: "socios", element: <PaginaSocios /> },
+      { path: "socios/:id", element: <FichaSocio /> },
+      { path: "planes", element: <PaginaPlanes /> },
+      { path: "importar", element: <EnConstruccion titulo="Importar Excel" fase={5} /> },
+      { path: "configuracion", element: <PaginaConfiguracion /> },
+    ],
+  },
+]);
 
 export default function App() {
   const { estado, reintentar } = useAbrirBase();
@@ -64,11 +74,7 @@ export default function App() {
     <ProveedorTema>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider delayDuration={300}>
-          {estado.tipo === "lista" && (
-            <HashRouter>
-              <Rutas />
-            </HashRouter>
-          )}
+          {estado.tipo === "lista" && <RouterProvider router={router} />}
           {estado.tipo === "abriendo" && (
             <div className="flex h-screen items-center justify-center gap-3 text-lg text-muted-foreground">
               <Loader2 className="size-6 animate-spin" aria-hidden /> Abriendo la base de datos…

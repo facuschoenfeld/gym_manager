@@ -17,6 +17,9 @@ export default tseslint.config(
       ...reactHooks.configs.recommended.rules,
       // Convención del proyecto: sin `any`.
       "@typescript-eslint/no-explicit-any": "error",
+      // Esta regla es para el React Compiler, que el proyecto no usa. TanStack Table y
+      // watch() de react-hook-form son incompatibles con él por diseño.
+      "react-hooks/incompatible-library": "off",
       "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
     },
   },
