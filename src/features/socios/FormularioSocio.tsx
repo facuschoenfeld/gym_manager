@@ -115,7 +115,8 @@ export function FormularioSocioDialogo({ abierto, alCerrar, socio, socios, alGua
 
   return (
     <Dialog open={abierto} onOpenChange={(a) => !a && cerrar()}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+      {/* Altura acotada para alejar el pie (con los botones) de la esquina donde aparecen los avisos. */}
+      <DialogContent className="max-h-[calc(100vh-14rem)] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle className="text-xl">{socio ? "Editar socio" : "Nuevo socio"}</DialogTitle>
           <DialogDescription className="text-base">

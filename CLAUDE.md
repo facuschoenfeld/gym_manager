@@ -117,7 +117,7 @@ Esto es una instrucción para Claude, no un hook de Claude Code: depende de que 
 - **Router de datos:** las rutas están en `createHashRouter` (`App.tsx`) para poder usar `useBlocker` (aviso de cambios sin guardar, ver Configuración). Con HashRouter, el hash de la URL **es** la ruta: nunca usar `<a href="#...">` para anclas dentro de la página.
 - **Errores:** `mensajeDeError(e)` es pura (traduce el error para mostrarlo). `registrarError(contexto, e)` escribe en el log. El log se escribe una sola vez por error: en `avisar.error`, en `QueryCache.onError` y al abrir la base. Nunca registrar durante un render.
 - **Claves de TanStack Query:** usar las constantes (`CLAVE_SOCIOS`, `CLAVE_PAGOS`, `clavePagosDeSocio`, `CLAVE_PLANES`, `CLAVE_CONFIG`). Nunca escribir los strings a mano.
-- **Tamaños de UI:** los componentes de `src/components/ui` se agrandaron (botón default `h-11 text-base`, lg `h-12`, input `h-11`, tablas `text-base`). Los bordes de los campos usan `border-foreground/50` y el anillo de foco es azul (`--ring`), para cumplir WCAG AA. Si se agrega un componente con `shadcn add`, hay que ajustarlo igual. **Diálogos** (`ui/dialog.tsx` y `ui/alert-dialog.tsx`): el contenido usa `grid-cols-1` (si no, la columna crece con los botones y se sale de la caja) y el pie lleva `flex-wrap`. Para cambiar el ancho de un `AlertDialogContent` hay que usar la misma variante que la base (`data-[size=default]:sm:max-w-*`); con `sm:max-w-*` a secas gana la base y la caja queda en 384 px. Si se vuelve a correr `shadcn add dialog` o `alert-dialog`, hay que reaplicar estos cambios.
+- **Tamaños de UI:** los componentes de `src/components/ui` se agrandaron (botón default `h-11 text-base`, lg `h-12`, input `h-11`, tablas `text-base`). Los bordes de los campos usan `border-foreground/50` y el anillo de foco es azul (`--ring`), para cumplir WCAG AA. Si se agrega un componente con `shadcn add`, hay que ajustarlo igual. **Diálogos** (`ui/dialog.tsx` y `ui/alert-dialog.tsx`): el contenido usa `grid-cols-1` (si no, la columna crece con los botones y se sale de la caja) y el pie lleva `flex-wrap`. Para cambiar el ancho de un `AlertDialogContent` hay que usar la misma variante que la base (`data-[size=default]:sm:max-w-*`); con `sm:max-w-*` a secas gana la base y la caja queda en 384 px. Además, `DialogContent` ignora los clics sobre un aviso (`[data-sonner-toaster]`) en `onPointerDownOutside`: si no, tocar un aviso cerraba el formulario y se perdía lo cargado. Si se vuelve a correr `shadcn add dialog` o `alert-dialog`, hay que reaplicar estos cambios.
 - La regla `react-hooks/incompatible-library` está desactivada en ESLint: es para el React Compiler, que no se usa, y TanStack Table y `watch()` de react-hook-form son incompatibles con él por diseño.
 
 ## Fuera de alcance
@@ -126,10 +126,10 @@ Pagos online, Mercado Pago o QR · envío automático de email o WhatsApp (solo 
 ## Decisiones tomadas con el usuario
 - **Planes:** ABM flexible (período × cantidad + precio). Se crean de entrada "Pase diario", "Semanal" y "Mensual", con precio 0.
 - **Mes calendario** para los vencimientos, no 30 días fijos.
-- **Notificaciones (RNF-08):** toast para cada acción y notificación de Windows solo para tareas en segundo plano. Los toasts no tienen botón de cerrar ni "Deshacer".
+- **Notificaciones (RNF-08):** toast para cada acción y notificación de Windows solo para tareas en segundo plano. Los toasts no tienen botón de cerrar ni "Deshacer" y aparecen **abajo a la derecha** (elegido por el usuario, aunque un revisor sugirió moverlos para no tapar "Guardar").
 - **Eliminar planes:** solo los que nunca se usaron; los usados se desactivan (para no perder historial).
 - **Cambios sin guardar:** el aviso ofrece "Guardar y salir", "Salir sin guardar" y "Seguir editando".
-- **Etiqueta del estado `pago`:** se muestra "Al día" (el documento dice "Pago"). **Falta que el usuario lo confirme.** Se cambia en `VISUAL_ESTADO` (`EstadoBadge.tsx`).
+- **Etiqueta del estado `pago`:** se muestra "Al día" (el documento dice "Pago"). Confirmado por el usuario el 2026-11-03. Está en `VISUAL_ESTADO` (`EstadoBadge.tsx`).
 - **Instalador:** NSIS en español con `embedBootstrapper` de WebView2. La PC del gimnasio tiene internet al instalar.
 - **Transacciones:** opción A, un comando Rust propio (`ejecutar_lote`), en lugar de lotes SQL con `INSERT OR ROLLBACK`.
 - **RAM:** se acepta `--disable-gpu`. Bajar de 100 MB no es viable con WebView2.
@@ -140,9 +140,9 @@ Pagos online, Mercado Pago o QR · envío automático de email o WhatsApp (solo 
 | Fase | Estado |
 |---|---|
 | 0. Esqueleto y entorno | ✅ Cerrada (2026-11-02) |
-| 1. Base de datos y lógica pura | ✅ Hecha dentro de la fase 0 (migraciones 001 y 002, `src/lib/*` con 144 tests). Faltan los esquemas Zod de formularios, que se hacen en la fase 2. |
-| 2. Planes, configuración y socios | 🔶 Implementada y revisada (test-runner, ui-ux-reviewer, code-reviewer). Falta la prueba manual del usuario y medir la RAM en release para cerrarla. |
-| 3. Pagos | Pendiente |
+| 1. Base de datos y lógica pura | ✅ Hecha dentro de la fase 0 (migraciones 001 y 002, `src/lib/*`). Los esquemas Zod de formularios se hicieron en la fase 2. |
+| 2. Planes, configuración y socios | ✅ Cerrada (2026-11-03). Reporte: `reports/2026-11-03_1830_fase-2_cierre.md`. 291 tests. |
+| 3. Pagos | ⏭️ Siguiente |
 | 4. Panel de deudores y avisos por WhatsApp | Pendiente. La pantalla de Inicio hoy es solo de diagnóstico (base, migraciones y prueba de transacciones en desarrollo). |
 | 5. Importación desde Excel | Pendiente |
 | 6. Respaldos, estado del sistema y log de errores | Pendiente |
@@ -161,9 +161,10 @@ Pagos online, Mercado Pago o QR · envío automático de email o WhatsApp (solo 
 |---|---|
 | release con GPU | ~216 MB |
 | **release con `--disable-gpu`** | **~118 MB** |
-| dev con `--disable-gpu` | ~169 MB |
+| dev con `--disable-gpu` | ~169 MB (fase 0) · ~199 MB (fase 2) |
+| **release, fase 2** (2026-11-03) | **~118,6 MB** (renderer 35,5 MB; ventana lista en 0,5 s; exe 5,8 MB) |
 
-En dev el renderer pesa más (~88 MB contra ~33 MB en release) por React en modo desarrollo y el servidor de Vite.
+En dev el renderer pesa más (~88-110 MB contra ~33-36 MB en release) por React en modo desarrollo y el servidor de Vite. El bundle JS de producción pesa ~690 KB (Vite avisa por superar 500 KB); si crece, partirlo con carga diferida de pantallas (`React.lazy`).
 
 **Commits:**
 
@@ -174,12 +175,19 @@ En dev el renderer pesa más (~88 MB contra ~33 MB en release) por React en modo
 | `18085d8` | `--disable-gpu` |
 | `bb7080a` | quitar `rust-analyzer` de las recomendaciones |
 | `d5e055d` | actualización de CLAUDE.md |
+| `992621f` | código de área 3482 (migración 002) |
+| `ba274a3`, `c776ce8` | automatización de subagentes, carpeta `reports/`, verificación de subagentes |
+| `749ea2f` | fase 2: lógica y consultas |
+| `4b94167` | fase 2: pantallas |
+| `d02a565` | fase 2: ajustes tras la prueba del usuario |
+| `015ff1c` | fix: diálogos desbordados |
 
 ## Pendientes
 - **Seguridad, según `security-auditor` (2026-11-02):**
   - **Alta:** `fs:scope` con `"**"` en `src-tauri/capabilities/default.json` da acceso a todo el disco con permisos de escritura y borrado. Hay que acotarlo a `$APPDATA/ar.gym.manager/**` y a la carpeta de respaldos. Resolverlo en la fase 6, cuando se defina cómo se elige esa carpeta (puede ser un pendrive).
   - **Media:** acotar `fs:allow-remove` a la carpeta de respaldos o quitarlo si no se usa.
 - Barra lateral colapsable (prioridad baja, la ventana mínima es de 1024 px).
+- Medir la RAM con muchos socios (cientos) en el listado, cuando haya datos importados (fase 5).
 - Probar `window.print()` en WebView2 con `--disable-gpu` (fase 4, vista imprimible).
 - Probar el instalador en Windows 10 1909 real o en una VM (fase 7). Lo ideal es la PC del gimnasio.
 - El Excel real del gimnasio, para ajustar el mapeo por defecto (fase 5). Con ese archivo, revisar si los DNI vienen como `30-123-456` o `30,123,456`: hoy `normalizarDni` los rechaza. Si aparecen, agregar esos formatos.

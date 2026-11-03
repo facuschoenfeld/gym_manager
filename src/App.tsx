@@ -90,9 +90,10 @@ export default function App() {
               </Button>
             </div>
           )}
-          {/* Los avisos aparecen y se van solos (sin botón de cerrar). Abajo a la izquierda, sobre el
-              menú lateral: así no tapan los botones de guardar, que están abajo a la derecha. */}
-          <Toaster position="bottom-left" richColors />
+          {/* Los avisos aparecen y se van solos (sin botón de cerrar). Abajo a la derecha: lo eligió el
+              usuario (2026-11-03). offset y visibleToasts son los valores por defecto de sonner,
+              escritos explícitos para ajustarlos fácil si hiciera falta. */}
+          <Toaster position="bottom-right" offset={{ bottom: 24, right: 24 }} visibleToasts={3} richColors />
         </TooltipProvider>
       </QueryClientProvider>
     </ProveedorTema>
