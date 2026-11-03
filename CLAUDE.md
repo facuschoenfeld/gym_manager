@@ -43,7 +43,7 @@ src/lib/                 utilidades PURAS con tests: fechas, dinero, telefonos, 
 src/components/          UI compartida (ui/ = shadcn, layout/, tema, notificar)
 src-tauri/src/lib.rs     solo registro de plugins, lista de migraciones y comandos
 src-tauri/src/lote.rs    comando ejecutar_lote (transacciones)
-reports/                 reportes de report-writer (subagentes y cierres de fase)
+reports/                 reportes de report-writer (subagentes y cierres de fase). Solo local, en .gitignore
 ```
 
 ## Reglas de datos (obligatorias)
@@ -99,10 +99,10 @@ Los subagentes son globales (`~/.claude/agents/`). Lanzarlos **sin preguntar** e
 **Orden al implementar:** escribir el código → `test-runner` (si hay lógica) → `ui-ux-reviewer` (si hay frontend) → corregir lo que reporten → `code-reviewer` → corregir → commit.
 
 **Reporte después de cada subagente:** cuando termina **cada** subagente, lanzar `report-writer` para documentar todos los cambios realizados: qué revisó o hizo el subagente, qué encontró, qué se corrigió y qué quedó pendiente.
-- **Dónde:** carpeta `reports/` en la raíz del proyecto (se versiona en git).
+- **Dónde:** carpeta `reports/` en la raíz del proyecto. **Es solo local: está en `.gitignore` y no se versiona ni se sube al repositorio.**
 - **Nombre del archivo:** `reports/AAAA-MM-DD_HHMM_<subagente>_<tema-corto>.md`. Ejemplo: `reports/2026-11-03_1015_ui-ux-reviewer_pantalla-socios.md`.
 - El reporte de cierre de cada fase también va ahí: `reports/AAAA-MM-DD_HHMM_fase-N_cierre.md`.
-- Se commitea junto con los cambios a los que se refiere.
+- **No se commitea.** Los reportes quedan en la PC local para consulta; no van en los commits ni en los PR.
 
 Esto es una instrucción para Claude, no un hook de Claude Code: depende de que el agente principal la cumpla en cada sesión.
 
