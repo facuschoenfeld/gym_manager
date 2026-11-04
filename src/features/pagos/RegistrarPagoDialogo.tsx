@@ -246,7 +246,7 @@ export function RegistrarPagoDialogo({ socio, alCerrar }: Props) {
             id="pago-monto"
             etiqueta="Monto"
             obligatorio
-            ayuda="Viene del precio del plan. Cambialo si cobraste otro monto. Poné 0 si no se cobra."
+            ayuda="Cambialo si cobraste otro monto."
             error={e.monto?.message}
           >
             <Input
