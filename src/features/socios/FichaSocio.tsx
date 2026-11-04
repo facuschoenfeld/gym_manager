@@ -1,7 +1,8 @@
 import { useRef, useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router";
-import { ArrowLeft, Ban, Pencil, Receipt, UserCheck, UserX } from "lucide-react";
-import { Confirmar } from "@/components/Confirmar";
+import { ArrowLeft, Ban, CreditCard, Pencil, Receipt, UserCheck, UserX } from "lucide-react";
+import { useAtajos } from "@/components/atajos";
+import { CLASES_PELIGRO_SECUNDARIA, Confirmar } from "@/components/Confirmar";
 import { Cargando, ErrorCarga, Vacio } from "@/components/EstadosCarga";
 import { Pagina } from "@/components/layout/Pagina";
 import { avisar } from "@/components/notificar";
@@ -15,6 +16,8 @@ import { formatearFecha, hoyISO } from "@/lib/fechas";
 import { esTelefonoWhatsApp, formatearTelefono } from "@/lib/telefonos";
 import { formatearDni } from "@/lib/texto";
 import { cn } from "@/lib/utils";
+import { AnularPagoDialogo } from "@/features/pagos/AnularPagoDialogo";
+import { RegistrarPagoDialogo } from "@/features/pagos/RegistrarPagoDialogo";
 import { EstadoBadge } from "./componentes/EstadoBadge";
 import { FormularioSocioDialogo } from "./FormularioSocio";
 import { useCambiarActivoSocio, usePagosDeSocio, useSocios } from "./hooks";
@@ -29,8 +32,25 @@ export function FichaSocio() {
   const navegar = useNavigate();
   const [editando, setEditando] = useState(false);
   const [confirmarBaja, setConfirmarBaja] = useState(false);
+  const [registrandoPago, setRegistrandoPago] = useState(false);
+  const [pagoAAnular, setPagoAAnular] = useState<Pago | null>(null);
   const botonBaja = useRef<HTMLButtonElement>(null);
+  const botonRegistrar = useRef<HTMLButtonElement>(null);
   const hoy = hoyISO();
+
+  // Ctrl+P: registrar un pago. Con el socio de baja no se abre el diálogo (no se puede cobrar).
+  useAtajos([
+    {
+      tecla: "p",
+      ctrl: true,
+      accion: () => {
+        const actual = socios.data?.find((s) => s.id === id);
+        if (!actual) return;
+        if (actual.activo) setRegistrandoPago(true);
+        else avisar.info("Reactivá al socio para registrar pagos");
+      },
+    },
+  ]);
 
   if (socios.isPending) return <Pagina titulo="Socio"><Cargando texto="Cargando socio…" /></Pagina>;
   if (socios.error) return <Pagina titulo="Socio"><ErrorCarga error={socios.error} reintentar={() => void socios.refetch()} /></Pagina>;
@@ -60,6 +80,15 @@ export function FichaSocio() {
       descripcion={socio.activo ? undefined : "Este socio está dado de baja. Sus datos y pagos se conservan."}
       acciones={
         <>
+          <Button
+            ref={botonRegistrar}
+            size="lg"
+            onClick={() => setRegistrandoPago(true)}
+            disabled={!socio.activo}
+            aria-keyshortcuts="Control+P"
+          >
+            <CreditCard aria-hidden /> Registrar pago
+          </Button>
           <Button size="lg" variant="outline" onClick={() => setEditando(true)}>
             <Pencil aria-hidden /> Editar
           </Button>
@@ -131,9 +160,22 @@ export function FichaSocio() {
           {pagos.isPending && <Cargando texto="Cargando pagos…" />}
           {pagos.error && <ErrorCarga error={pagos.error} reintentar={() => void pagos.refetch()} />}
           {pagos.data?.length === 0 && <Vacio icono={Receipt} titulo="Todavía no tiene pagos registrados" />}
-          {pagos.data && pagos.data.length > 0 && <TablaPagos pagos={pagos.data} />}
+          {pagos.data && pagos.data.length > 0 && <TablaPagos pagos={pagos.data} alAnular={setPagoAAnular} />}
         </CardContent>
       </Card>
+
+      {registrandoPago && socio.activo && (
+        <RegistrarPagoDialogo socio={socio} alCerrar={() => setRegistrandoPago(false)} />
+      )}
+      {pagoAAnular && (
+        <AnularPagoDialogo
+          pago={pagoAAnular}
+          pagos={pagos.data ?? []}
+          nombreSocio={nombreCompleto(socio)}
+          alCerrar={() => setPagoAAnular(null)}
+          focoAlCerrar={botonRegistrar}
+        />
+      )}
 
       <FormularioSocioDialogo
         abierto={editando}
@@ -163,7 +205,7 @@ function Dato({ etiqueta, children }: { etiqueta: string; children: ReactNode })
   );
 }
 
-function TablaPagos({ pagos }: { pagos: Pago[] }) {
+function TablaPagos({ pagos, alAnular }: { pagos: Pago[]; alAnular: (pago: Pago) => void }) {
   return (
     <Table>
       <TableHeader>
@@ -173,6 +215,9 @@ function TablaPagos({ pagos }: { pagos: Pago[] }) {
           <TableHead>Plan</TableHead>
           <TableHead>Medio</TableHead>
           <TableHead className="text-right">Monto</TableHead>
+          <TableHead>
+            <span className="sr-only">Acciones</span>
+          </TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -181,7 +226,7 @@ function TablaPagos({ pagos }: { pagos: Pago[] }) {
             <TableCell className="tabular-nums">
               <span className={cn(p.anulado && "line-through")}>{formatearFecha(p.fechaPago)}</span>
               {p.anulado && (
-                <span className="mt-1 flex items-center gap-1 text-sm font-medium text-destructive">
+                <span className="mt-1 flex items-center gap-1 text-base font-medium text-destructive">
                   <Ban className="size-4" aria-hidden /> Anulado{p.anuladoMotivo ? `: ${p.anuladoMotivo}` : ""}
                 </span>
               )}
@@ -194,6 +239,18 @@ function TablaPagos({ pagos }: { pagos: Pago[] }) {
               {p.referencia && <span className="block text-sm text-muted-foreground">{p.referencia}</span>}
             </TableCell>
             <TableCell className={cn("text-right tabular-nums", p.anulado && "line-through")}>{formatearPesos(p.monto)}</TableCell>
+            <TableCell>
+              {!p.anulado && (
+                <Button
+                  variant="outline"
+                  className={CLASES_PELIGRO_SECUNDARIA}
+                  onClick={() => alAnular(p)}
+                  aria-label={`Anular el pago de ${formatearPesos(p.monto)} del ${formatearFecha(p.fechaPago)}, cubre hasta ${formatearFecha(p.venceEl)}`}
+                >
+                  <Ban aria-hidden /> Anular
+                </Button>
+              )}
+            </TableCell>
           </TableRow>
         ))}
       </TableBody>

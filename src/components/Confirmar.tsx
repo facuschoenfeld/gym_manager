@@ -13,9 +13,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-const CLASES_PELIGRO = "bg-destructive text-white hover:bg-destructive/90 dark:bg-red-700 dark:hover:bg-red-600";
+export const CLASES_PELIGRO = "bg-destructive text-white hover:bg-destructive/90 dark:bg-red-700 dark:hover:bg-red-600";
 /** Acción secundaria peligrosa: contorno rojo, para que no compita con el botón principal. */
-const CLASES_PELIGRO_SECUNDARIA =
+export const CLASES_PELIGRO_SECUNDARIA =
   "border-red-700/60 text-red-700 hover:bg-red-50 hover:text-red-800 dark:border-red-400/60 dark:text-red-300 dark:hover:bg-red-950 dark:hover:text-red-200";
 
 export interface AccionConfirmar {

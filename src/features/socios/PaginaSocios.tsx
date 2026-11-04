@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
-import { ChevronRight, Plus, Search, UserPlus, Users, X } from "lucide-react";
+import { ChevronRight, CreditCard, Plus, Search, UserPlus, Users, X } from "lucide-react";
 import { Cargando, ErrorCarga, Vacio } from "@/components/EstadosCarga";
 import { Pagina } from "@/components/layout/Pagina";
 import type { EstadoNavegacion } from "@/components/layout/Layout";
@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { usePlanes } from "@/features/planes/hooks";
+import { RegistrarPagoDialogo } from "@/features/pagos/RegistrarPagoDialogo";
 import { describirVencimiento, type EstadoSocio } from "@/lib/estado";
 import { formatearFecha, hoyISO } from "@/lib/fechas";
 import { formatearTelefono } from "@/lib/telefonos";
@@ -24,6 +25,7 @@ import {
   FILTROS_INICIALES,
   filtrarSocios,
   leerFiltrosGuardados,
+  nombreCompleto,
   type FiltroActivo,
   type FiltrosSocios,
   type OrdenSocios,
@@ -51,6 +53,9 @@ export function PaginaSocios() {
   const buscador = useRef<HTMLInputElement>(null);
   const [filtros, setFiltros] = useState<FiltrosSocios>(filtrosGuardados);
   const [nuevoAbierto, setNuevoAbierto] = useState(false);
+  // Se guarda el id, no el socio: así el diálogo siempre usa los datos actuales de la lista.
+  const [pagarAId, setPagarAId] = useState<number | null>(null);
+  const pagarA = pagarAId === null ? null : (socios.data?.find((s) => s.id === pagarAId) ?? null);
   const hoy = hoyISO();
 
   useEffect(() => sessionStorage.setItem(CLAVE_FILTROS, JSON.stringify(filtros)), [filtros]);
@@ -106,6 +111,25 @@ export function PaginaSocios() {
       }),
       col.accessor("planNombre", { header: "Plan", cell: (c) => c.getValue() ?? "—" }),
       col.accessor("telefono", { header: "Teléfono", cell: (c) => <span className="tabular-nums">{formatearTelefono(c.getValue())}</span> }),
+      col.display({
+        id: "pagar",
+        header: () => <span className="sr-only">Cobrar</span>,
+        cell: ({ row: { original: s } }) => (
+          <Button
+            size="lg"
+            variant="outline"
+            disabled={!s.activo}
+            aria-label={`Registrar pago de ${nombreCompleto(s)}`}
+            // El botón está dentro de la fila clicable: no debe abrir la ficha.
+            onClick={(e) => {
+              e.stopPropagation();
+              setPagarAId(s.id);
+            }}
+          >
+            <CreditCard aria-hidden /> Registrar pago
+          </Button>
+        ),
+      }),
       col.display({
         id: "ir",
         header: () => <span className="sr-only">Abrir ficha</span>,
@@ -288,6 +312,8 @@ export function PaginaSocios() {
           </div>
         </>
       )}
+
+      {pagarA && <RegistrarPagoDialogo socio={pagarA} alCerrar={() => setPagarAId(null)} />}
 
       <FormularioSocioDialogo
         abierto={formularioAbierto}
