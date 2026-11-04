@@ -7,6 +7,7 @@ import { Cargando, ErrorCarga, Vacio } from "@/components/EstadosCarga";
 import { Pagina } from "@/components/layout/Pagina";
 import { avisar } from "@/components/notificar";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { Pago } from "@/db/queries/pagos";
@@ -82,15 +83,20 @@ export function FichaSocio() {
       descripcion={socio.activo ? undefined : "Este socio está dado de baja. Sus datos y pagos se conservan."}
       acciones={
         <>
-          <Button
-            ref={botonRegistrar}
-            size="lg"
-            onClick={() => setRegistrandoPago(true)}
-            disabled={!socio.activo}
-            aria-keyshortcuts="Control+T"
-          >
-            <CreditCard aria-hidden /> Registrar pago
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                ref={botonRegistrar}
+                size="lg"
+                onClick={() => setRegistrandoPago(true)}
+                disabled={!socio.activo}
+                aria-keyshortcuts="Control+T"
+              >
+                <CreditCard aria-hidden /> Registrar pago
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Atajo: Ctrl+T</TooltipContent>
+          </Tooltip>
           <Button size="lg" variant="outline" onClick={() => setEditando(true)}>
             <Pencil aria-hidden /> Editar
           </Button>

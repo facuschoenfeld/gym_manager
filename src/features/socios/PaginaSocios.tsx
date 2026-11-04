@@ -6,6 +6,7 @@ import { Cargando, ErrorCarga, Vacio } from "@/components/EstadosCarga";
 import { Pagina } from "@/components/layout/Pagina";
 import type { EstadoNavegacion } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -146,9 +147,14 @@ export function PaginaSocios() {
       titulo="Socios"
       descripcion={socios.data ? `${totalActivos} ${totalActivos === 1 ? "socio activo" : "socios activos"}` : undefined}
       acciones={
-        <Button size="lg" aria-keyshortcuts="Control+N" onClick={() => setNuevoAbierto(true)}>
-          <Plus aria-hidden /> Nuevo socio
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button size="lg" aria-keyshortcuts="Control+N" onClick={() => setNuevoAbierto(true)}>
+              <Plus aria-hidden /> Nuevo socio
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Atajo: Ctrl+N</TooltipContent>
+        </Tooltip>
       }
     >
       {/* Buscador y filtros */}
