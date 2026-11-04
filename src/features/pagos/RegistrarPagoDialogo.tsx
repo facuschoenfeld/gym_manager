@@ -2,7 +2,7 @@ import { useEffect, useMemo } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link } from "react-router";
-import { CalendarClock, CircleAlert, Loader2, TriangleAlert } from "lucide-react";
+import { Check, CalendarClock, CircleAlert, Loader2, TriangleAlert } from "lucide-react";
 import { Campo, idsDescripcion } from "@/components/Campo";
 import { avisar } from "@/components/notificar";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ import { nombreCompleto, type Socio } from "@/features/socios/logica/socio";
 import { centavosATexto, formatearPesos, parsearPesos } from "@/lib/dinero";
 import { describirPeriodo, esFechaISOValida, formatearFecha, hoyISO, type FechaISO } from "@/lib/fechas";
 import { calcularNuevoVencimiento, inicioDelPeriodo } from "@/lib/vencimiento";
+import { cn } from "@/lib/utils";
 import { useRegistrarPago } from "./hooks";
 import {
   crearEsquemaPago,
@@ -75,6 +76,8 @@ export function RegistrarPagoDialogo({ socio, alCerrar }: Props) {
   }, [planPropuestoId, planPropuestoMonto, getValues, setValue]);
 
   const alElegirPlan = (id: string, cambiar: (valor: string) => void) => {
+    // Tocar el plan que ya está elegido no debe pisar el monto que el coach haya corregido.
+    if (id === getValues("planId")) return;
     cambiar(id);
     // Cambiar de plan cambia el precio propuesto. El usuario puede corregirlo después.
     const plan = opciones.find((p) => String(p.id) === id);
@@ -190,39 +193,60 @@ export function RegistrarPagoDialogo({ socio, alCerrar }: Props) {
         )}
 
         <form id="form-pago" onSubmit={enviar} noValidate className="grid gap-4 md:grid-cols-2">
-          <Campo id="pago-plan" etiqueta="Plan" obligatorio error={e.planId?.message}>
-            <Controller
-              control={control}
-              name="planId"
-              render={({ field }) => (
-                <Select value={field.value} onValueChange={(v) => alElegirPlan(v, field.onChange)}>
-                  <SelectTrigger
+          {/* Los planes se muestran todos a la vista (no en un desplegable): así no dependen del
+              espacio que quede debajo de la ventana. */}
+          <div className="md:col-span-2">
+            <Campo id="pago-plan" etiqueta="Plan" obligatorio error={e.planId?.message}>
+              <Controller
+                control={control}
+                name="planId"
+                render={({ field }) => (
+                  <div
                     id="pago-plan"
-                    ref={field.ref}
-                    className="w-full"
-                    aria-invalid={!!e.planId}
+                    role="group"
+                    aria-label="Plan, obligatorio"
                     aria-describedby={idsDescripcion("pago-plan", e.planId?.message)}
+                    className="grid gap-2 sm:grid-cols-2"
                   >
-                    <SelectValue placeholder={cargando ? "Cargando planes…" : "Elegí un plan"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {opciones.map((p) => (
-                      <SelectItem key={p.id} value={String(p.id)}>
-                        {p.nombre} · {describirPeriodo(p.periodo, p.cantidad)}
-                        {p.activo ? "" : " (inactivo)"}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-          </Campo>
+                    {planes.isPending && <p className="text-base text-muted-foreground">Cargando planes…</p>}
+                    {opciones.map((p, i) => {
+                      const elegido = String(p.id) === field.value;
+                      // Si no hay plan elegido, el foco de un error de validación va al primero.
+                      const recibeFoco = elegido || (field.value === "" && i === 0);
+                      return (
+                        <button
+                          key={p.id}
+                          ref={recibeFoco ? field.ref : undefined}
+                          type="button"
+                          aria-pressed={elegido}
+                          onClick={() => alElegirPlan(String(p.id), field.onChange)}
+                          className={cn(
+                            "flex min-h-12 items-center justify-between gap-3 rounded-xl border-2 px-4 py-2 text-left text-base transition-colors focus-visible:ring-3 focus-visible:ring-ring focus-visible:outline-none",
+                            elegido ? "border-primary bg-primary/10 font-semibold" : "border-foreground/50 hover:bg-muted",
+                          )}
+                        >
+                          <span>
+                            {p.nombre} · {describirPeriodo(p.periodo, p.cantidad)}
+                            {p.activo ? "" : " (inactivo)"}
+                            <span className="block text-base">
+                              {p.monto > 0 ? formatearPesos(p.monto) : "sin precio"}
+                            </span>
+                          </span>
+                          {elegido && <Check className="size-6 shrink-0 text-primary" aria-hidden />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              />
+            </Campo>
+          </div>
 
           <Campo
             id="pago-monto"
             etiqueta="Monto"
             obligatorio
-            ayuda="Viene del precio del plan. Cambialo si cobraste otro monto (por ejemplo, con descuento). Poné 0 si no se cobra."
+            ayuda="Viene del precio del plan. Cambialo si cobraste otro monto. Poné 0 si no se cobra."
             error={e.monto?.message}
           >
             <Input
@@ -261,7 +285,7 @@ export function RegistrarPagoDialogo({ socio, alCerrar }: Props) {
                   >
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent position="popper" avoidCollisions={false}>
                     {MEDIOS_PAGO.map((m) => (
                       <SelectItem key={m.valor} value={m.valor}>
                         {m.etiqueta}
