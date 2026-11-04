@@ -12,6 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useConfig } from "@/features/configuracion/hooks";
 import { usePlanes } from "@/features/planes/hooks";
 import { planesElegibles } from "@/features/planes/logica/plan";
+import type { Pago } from "@/db/queries/pagos";
+import { usePagosDeSocio } from "@/features/socios/hooks";
 import { nombreCompleto, type Socio } from "@/features/socios/logica/socio";
 import { centavosATexto, formatearPesos, parsearPesos } from "@/lib/dinero";
 import { describirPeriodo, esFechaISOValida, formatearFecha, hoyISO, type FechaISO } from "@/lib/fechas";
@@ -21,10 +23,15 @@ import {
   crearEsquemaPago,
   FORMULARIO_PAGO_VACIO,
   MEDIOS_PAGO,
+  pagoDelMismoDia,
   planPorDefectoParaPago,
   type DatosPagoForm,
   type FormularioPago,
 } from "./logica/pago";
+
+/** Mensaje accionable: dice qué pago hay y cómo corregirlo (el historial queda detrás del diálogo). */
+const mensajeMismoDia = (p: Pago) =>
+  `Ya hay un pago de ${formatearPesos(p.monto)} registrado el ${formatearFecha(p.fechaPago)}. Si está mal, cerrá esta ventana y anulalo desde el historial del socio.`;
 
 interface Props {
   socio: Socio;
@@ -39,10 +46,11 @@ export function RegistrarPagoDialogo({ socio, alCerrar }: Props) {
   const config = useConfig();
   const planes = usePlanes();
   const registrar = useRegistrarPago();
+  const pagosSocio = usePagosDeSocio(socio.id);
   const hoy = hoyISO();
   const esquema = useMemo(() => crearEsquemaPago(hoy), [hoy]);
 
-  const { register, handleSubmit, control, setValue, getValues, setError, formState } = useForm<
+  const { register, handleSubmit, control, setValue, getValues, setError, setFocus, formState } = useForm<
     FormularioPago,
     unknown,
     DatosPagoForm
@@ -79,6 +87,9 @@ export function RegistrarPagoDialogo({ socio, alCerrar }: Props) {
   const montoTexto = useWatch({ control, name: "monto" });
   const planElegido = opciones.find((p) => String(p.id) === planId);
   const sinCobro = parsearPesos(montoTexto ?? "") === 0;
+  // Regla: un solo pago vigente por socio y por día.
+  const pagoDelDia = pagoDelMismoDia(pagosSocio.data ?? [], fechaPago);
+  const errorFecha = e.fechaPago?.message ?? (pagoDelDia ? mensajeMismoDia(pagoDelDia) : undefined);
   const vista = (() => {
     if (!planElegido || !config.data || !esFechaISOValida(fechaPago) || fechaPago > hoy) return null;
     const base = {
@@ -94,6 +105,12 @@ export function RegistrarPagoDialogo({ socio, alCerrar }: Props) {
   })();
 
   const enviar = handleSubmit(async (datos) => {
+    const repetido = pagoDelMismoDia(pagosSocio.data ?? [], datos.fechaPago);
+    if (repetido) {
+      setError("fechaPago", { message: mensajeMismoDia(repetido) });
+      setFocus("fechaPago");
+      return;
+    }
     const plan = opciones.find((p) => p.id === datos.planId);
     if (!plan) {
       setError("planId", { message: "Ese plan ya no está disponible. Elegí otro." });
@@ -129,7 +146,7 @@ export function RegistrarPagoDialogo({ socio, alCerrar }: Props) {
 
   const cargando = planes.isPending || config.isPending;
   const sinPlanes = !planes.isPending && opciones.length === 0;
-  const errorCarga = planes.error ?? config.error;
+  const errorCarga = planes.error ?? config.error ?? pagosSocio.error;
 
   return (
     <Dialog open onOpenChange={(abierto) => !abierto && !registrar.isPending && alCerrar()}>
@@ -152,6 +169,7 @@ export function RegistrarPagoDialogo({ socio, alCerrar }: Props) {
               onClick={() => {
                 void planes.refetch();
                 void config.refetch();
+                void pagosSocio.refetch();
               }}
             >
               Reintentar
@@ -217,13 +235,13 @@ export function RegistrarPagoDialogo({ socio, alCerrar }: Props) {
             />
           </Campo>
 
-          <Campo id="pago-fecha" etiqueta="Fecha de pago" obligatorio ayuda="No puede ser futura." error={e.fechaPago?.message}>
+          <Campo id="pago-fecha" etiqueta="Fecha de pago" obligatorio ayuda="No puede ser futura." error={errorFecha}>
             <Input
               id="pago-fecha"
               type="date"
               max={hoy}
-              aria-invalid={!!e.fechaPago}
-              aria-describedby={idsDescripcion("pago-fecha", e.fechaPago?.message, true)}
+              aria-invalid={!!errorFecha}
+              aria-describedby={idsDescripcion("pago-fecha", errorFecha, true)}
               {...register("fechaPago")}
             />
           </Campo>
@@ -304,7 +322,7 @@ export function RegistrarPagoDialogo({ socio, alCerrar }: Props) {
             type="submit"
             form="form-pago"
             size="lg"
-            disabled={formState.isSubmitting || registrar.isPending || cargando || !config.data || sinPlanes || !!errorCarga}
+            disabled={formState.isSubmitting || registrar.isPending || cargando || pagosSocio.isPending || !config.data || sinPlanes || !!errorCarga}
           >
             {registrar.isPending && <Loader2 className="animate-spin" aria-hidden />}
             Registrar pago

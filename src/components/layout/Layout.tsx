@@ -42,6 +42,10 @@ export function Layout() {
     { tecla: "f", ctrl: true, accion: () => navegar("/socios", { state: { accion: "buscar" } satisfies EstadoNavegacion }) },
     { tecla: "/", accion: () => navegar("/socios", { state: { accion: "buscar" } satisfies EstadoNavegacion }) },
     { tecla: "n", ctrl: true, accion: () => navegar("/socios", { state: { accion: "nuevo-socio" } satisfies EstadoNavegacion }) },
+    // Ctrl+T (registrar pago) lo maneja la ficha del socio. Acá solo se bloquean la acción nativa
+    // (nueva pestaña) y Ctrl+P (imprimir), que no hace falta en esta app hasta la vista de impresión.
+    { tecla: "t", ctrl: true, accion: () => undefined },
+    { tecla: "p", ctrl: true, accion: () => undefined },
   ]);
 
   return (
@@ -90,6 +94,8 @@ export function Layout() {
             <dd>Buscar socio</dd>
             <dt><kbd className="font-mono">Ctrl+N</kbd></dt>
             <dd>Nuevo socio</dd>
+            <dt><kbd className="font-mono">Ctrl+T</kbd></dt>
+            <dd>Registrar pago (en la ficha)</dd>
             <dt><kbd className="font-mono">Esc</kbd></dt>
             <dd>Cerrar ventana</dd>
           </dl>

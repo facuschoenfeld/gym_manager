@@ -36,6 +36,14 @@ fn migraciones() -> Vec<Migration> {
             sql: include_str!("../../src/db/migrations/002_codigo_area.sql"),
             kind: MigrationKind::Up,
         },
+        // Versión 3: un solo pago vigente por socio y por día (anula duplicados y crea el índice único).
+        Migration {
+            version: 3,
+            description: "un_pago_por_socio_y_dia",
+            // include_str! toma el contenido del archivo .sql y lo incluye en el ejecutable al compilar.
+            sql: include_str!("../../src/db/migrations/003_un_pago_por_socio_y_dia.sql"),
+            kind: MigrationKind::Up,
+        },
     ]
 }
 

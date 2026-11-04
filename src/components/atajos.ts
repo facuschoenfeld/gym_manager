@@ -33,7 +33,8 @@ export function useAtajos(atajos: Atajo[]): void {
         return;
       }
       for (const a of ref.current) {
-        if (a.tecla !== tecla || (a.ctrl ?? false) !== conCtrl) continue;
+        // Shift o Alt cambian la combinación: Ctrl+Shift+T no es Ctrl+T.
+        if (a.tecla !== tecla || (a.ctrl ?? false) !== conCtrl || e.shiftKey || e.altKey) continue;
         if (!a.enCampos && !a.ctrl && escribiendoEnCampo(e.target)) continue;
         e.preventDefault();
         a.accion();

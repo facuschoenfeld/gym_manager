@@ -38,10 +38,10 @@ export function FichaSocio() {
   const botonRegistrar = useRef<HTMLButtonElement>(null);
   const hoy = hoyISO();
 
-  // Ctrl+P: registrar un pago. Con el socio de baja no se abre el diálogo (no se puede cobrar).
+  // Ctrl+T: registrar un pago. Con el socio de baja no se abre el diálogo (no se puede cobrar).
   useAtajos([
     {
-      tecla: "p",
+      tecla: "t",
       ctrl: true,
       accion: () => {
         const actual = socios.data?.find((s) => s.id === id);
@@ -85,7 +85,8 @@ export function FichaSocio() {
             size="lg"
             onClick={() => setRegistrandoPago(true)}
             disabled={!socio.activo}
-            aria-keyshortcuts="Control+P"
+            aria-keyshortcuts="Control+T"
+            title="Atajo: Ctrl+T"
           >
             <CreditCard aria-hidden /> Registrar pago
           </Button>

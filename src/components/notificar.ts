@@ -23,6 +23,9 @@ export function mensajeDeError(e: unknown): string {
   if (/CHECK constraint failed/i.test(texto)) return "Hay un dato con un formato inválido. Revisá los campos.";
   if (/UNIQUE constraint failed: clientes\.dni/i.test(texto)) return "Ya existe un socio con ese DNI.";
   if (/UNIQUE constraint failed: planes\.nombre/i.test(texto)) return "Ya existe un plan con ese nombre.";
+  // Un solo pago vigente por socio y día (índice único parcial, migración 003).
+  if (/UNIQUE constraint failed: pagos\.cliente_id, pagos\.fecha_pago/i.test(texto))
+    return "Este socio ya tiene un pago en esa fecha. Si está mal, anulalo desde su historial.";
   if (/database is locked/i.test(texto)) return "La base de datos está ocupada. Probá de nuevo en unos segundos.";
   return texto;
 }

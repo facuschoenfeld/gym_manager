@@ -128,3 +128,12 @@ export function hayPagosPosteriores(pagos: PagoParaEstado[], idAnulado: number):
       (p.fechaPago > pago.fechaPago || (p.fechaPago === pago.fechaPago && p.id > pago.id)),
   );
 }
+
+/**
+ * Regla: un socio tiene como máximo un pago vigente por día. Si ya hay uno con esa fecha, devuelve
+ * ese pago (para mostrar cuál es); si no, null. Los anulados no cuentan. La base lo garantiza igual
+ * con un índice único (migración 003).
+ */
+export function pagoDelMismoDia<T extends PagoParaEstado>(pagos: T[], fechaPago: FechaISO): T | null {
+  return pagos.find((p) => !p.anulado && p.fechaPago === fechaPago) ?? null;
+}

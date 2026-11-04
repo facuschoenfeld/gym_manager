@@ -5,6 +5,7 @@ import {
   esquemaAnulacion,
   FORMULARIO_PAGO_VACIO,
   hayPagosPosteriores,
+  pagoDelMismoDia,
   planPorDefectoParaPago,
   venceElSinPago,
   type FormularioPago,
@@ -266,5 +267,25 @@ describe("hayPagosPosteriores", () => {
 
   it("es false si el id no existe", () => {
     expect(hayPagosPosteriores([p(1, "2026-10-03")], 99)).toBe(false);
+  });
+});
+
+describe("pagoDelMismoDia", () => {
+  const p = (id: number, fechaPago: string, anulado = false) => ({ id, fechaPago, venceEl: fechaPago, anulado });
+
+  it("devuelve el pago vigente de esa fecha", () => {
+    expect(pagoDelMismoDia([p(1, "2026-11-02"), p(2, "2026-11-03")], "2026-11-03")?.id).toBe(2);
+  });
+
+  it("devuelve null si no hay pagos en esa fecha", () => {
+    expect(pagoDelMismoDia([p(1, "2026-11-02")], "2026-11-03")).toBe(null);
+  });
+
+  it("ignora un pago anulado de esa fecha (se puede volver a registrar)", () => {
+    expect(pagoDelMismoDia([p(1, "2026-11-03", true)], "2026-11-03")).toBe(null);
+  });
+
+  it("sin pagos devuelve null", () => {
+    expect(pagoDelMismoDia([], "2026-11-03")).toBe(null);
   });
 });
