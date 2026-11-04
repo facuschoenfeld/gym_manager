@@ -208,6 +208,34 @@ function FormularioGeneral({ config }: { config: Config }) {
         </Button>
       </div>
 
+      {/* Solo informativa: va debajo del pie de guardado para que no se confunda con un campo del formulario. */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl">Atajos de teclado</CardTitle>
+          <CardDescription className="text-base">Para usar la app sin el mouse. Esta lista es solo informativa.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <dl className="grid gap-x-8 gap-y-3 text-base sm:grid-cols-[auto_1fr]">
+            <dt className="font-medium">
+              <kbd className="font-mono">Ctrl+F</kbd> o <kbd className="font-mono">/</kbd>
+            </dt>
+            <dd>Buscar socio</dd>
+            <dt className="font-medium">
+              <kbd className="font-mono">Ctrl+N</kbd>
+            </dt>
+            <dd>Nuevo socio</dd>
+            <dt className="font-medium">
+              <kbd className="font-mono">Ctrl+T</kbd>
+            </dt>
+            <dd>Registrar pago (desde la ficha del socio)</dd>
+            <dt className="font-medium">
+              <kbd className="font-mono">Esc</kbd>
+            </dt>
+            <dd>Cerrar ventana o diálogo</dd>
+          </dl>
+        </CardContent>
+      </Card>
+
       <Confirmar
         abierto={salida.state === "blocked"}
         alCambiar={(abierto) => !abierto && salida.reset?.()}

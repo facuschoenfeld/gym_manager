@@ -148,9 +148,6 @@ export function PaginaSocios() {
       acciones={
         <Button size="lg" aria-keyshortcuts="Control+N" onClick={() => setNuevoAbierto(true)}>
           <Plus aria-hidden /> Nuevo socio
-          <kbd className="ml-1 font-mono text-sm opacity-70" aria-hidden>
-            Ctrl+N
-          </kbd>
         </Button>
       }
     >
@@ -162,7 +159,7 @@ export function PaginaSocios() {
             ref={buscador}
             type="search"
             aria-label="Buscar socio por nombre, apellido o DNI"
-            placeholder="Buscar por nombre, apellido o DNI…  (Ctrl+F)"
+            placeholder="Buscar por nombre, apellido o DNI…"
             className="h-14 pr-12 pl-13 text-lg md:text-lg [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden"
             value={filtros.busqueda}
             onChange={(e) => cambiar("busqueda", e.target.value)}

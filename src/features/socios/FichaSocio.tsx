@@ -88,12 +88,8 @@ export function FichaSocio() {
             onClick={() => setRegistrandoPago(true)}
             disabled={!socio.activo}
             aria-keyshortcuts="Control+T"
-            title="Atajo: Ctrl+T"
           >
             <CreditCard aria-hidden /> Registrar pago
-            <kbd className="ml-1 font-mono text-sm opacity-70" aria-hidden>
-            Ctrl+T
-            </kbd>
           </Button>
           <Button size="lg" variant="outline" onClick={() => setEditando(true)}>
             <Pencil aria-hidden /> Editar

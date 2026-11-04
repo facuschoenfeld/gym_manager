@@ -89,16 +89,6 @@ export function Layout() {
           ))}
         </nav>
         <div className="space-y-2 p-3">
-          <dl className="grid grid-cols-[auto_1fr] gap-x-2 px-3 text-sm text-muted-foreground">
-            <dt><kbd className="font-mono">Ctrl+F</kbd> o <kbd className="font-mono">/</kbd></dt>
-            <dd>Buscar socio</dd>
-            <dt><kbd className="font-mono">Ctrl+N</kbd></dt>
-            <dd>Nuevo socio</dd>
-            <dt><kbd className="font-mono">Ctrl+T</kbd></dt>
-            <dd>Registrar pago (en la ficha)</dd>
-            <dt><kbd className="font-mono">Esc</kbd></dt>
-            <dd>Cerrar ventana</dd>
-          </dl>
           <Button variant="ghost" className="w-full justify-start gap-3" onClick={alternarTema}>
             {tema === "claro" ? <Moon aria-hidden /> : <Sun aria-hidden />}
             {tema === "claro" ? "Modo oscuro" : "Modo claro"}
