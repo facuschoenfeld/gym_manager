@@ -135,6 +135,8 @@ Pagos online, Mercado Pago o QR · envío automático de email o WhatsApp (solo 
 - **RAM:** se acepta `--disable-gpu`. Bajar de 100 MB no es viable con WebView2.
 - **Código de área por defecto: 3482** (Reconquista, Santa Fe; 6 dígitos locales). Se cargó con la migración `002_codigo_area.sql` y se puede cambiar desde la configuración.
 - Las fechas se guardan en `YYYY-MM-DD`, aunque el .md original dice "ISO (DD-MM-YYYY)", que es contradictorio.
+- **Un solo pago vigente por socio y por día** (2026-11-03). Se aplica en el formulario, en `pagoDelMismoDia` y con el índice único `ux_pagos_socio_dia` (migración 003). Pagar dos veces el mismo día no está permitido: para cobrar dos meses juntos se usa un plan de 2 meses. Consecuencia conocida: si había varios pagos del mismo día, la migración deja el de id menor y anula los demás (con motivo).
+- **Atajo para registrar pago: Ctrl+T** (2026-11-03), en la ficha del socio. Ctrl+P no se usa: abre imprimir en WebView2. Ctrl+P y Ctrl+T se bloquean en toda la app.
 
 ## Estado actual
 | Fase | Estado |
