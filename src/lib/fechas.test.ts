@@ -10,6 +10,7 @@ import {
   parsearFechaAR,
   rangoDelMes,
   sumarPeriodo,
+  horaDe,
 } from "./fechas";
 
 describe("hoyISO", () => {
@@ -92,5 +93,19 @@ describe("otras", () => {
   it("describirPeriodo", () => {
     expect(describirPeriodo("mes", 1)).toBe("1 mes");
     expect(describirPeriodo("mes", 3)).toBe("3 meses");
+  });
+});
+
+describe("horaDe", () => {
+  it("extrae HH:MM de una fecha y hora", () => {
+    expect(horaDe("2026-11-04 14:32:10")).toBe("14:32");
+    expect(horaDe("2026-11-04T09:05:00")).toBe("09:05");
+  });
+
+  it("devuelve null si no hay hora o el formato no sirve", () => {
+    expect(horaDe(null)).toBe(null);
+    expect(horaDe(undefined)).toBe(null);
+    expect(horaDe("2026-11-04")).toBe(null);
+    expect(horaDe("ayer a la tarde")).toBe(null);
   });
 });

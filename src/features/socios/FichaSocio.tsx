@@ -17,6 +17,7 @@ import { esTelefonoWhatsApp, formatearTelefono } from "@/lib/telefonos";
 import { formatearDni } from "@/lib/texto";
 import { cn } from "@/lib/utils";
 import { AnularPagoDialogo } from "@/features/pagos/AnularPagoDialogo";
+import { DetalleAnulacionDialogo } from "@/features/pagos/DetalleAnulacionDialogo";
 import { RegistrarPagoDialogo } from "@/features/pagos/RegistrarPagoDialogo";
 import { EstadoBadge } from "./componentes/EstadoBadge";
 import { FormularioSocioDialogo } from "./FormularioSocio";
@@ -34,6 +35,7 @@ export function FichaSocio() {
   const [confirmarBaja, setConfirmarBaja] = useState(false);
   const [registrandoPago, setRegistrandoPago] = useState(false);
   const [pagoAAnular, setPagoAAnular] = useState<Pago | null>(null);
+  const [pagoDetalle, setPagoDetalle] = useState<Pago | null>(null);
   const botonBaja = useRef<HTMLButtonElement>(null);
   const botonRegistrar = useRef<HTMLButtonElement>(null);
   const hoy = hoyISO();
@@ -164,13 +166,16 @@ export function FichaSocio() {
           {pagos.isPending && <Cargando texto="Cargando pagos…" />}
           {pagos.error && <ErrorCarga error={pagos.error} reintentar={() => void pagos.refetch()} />}
           {pagos.data?.length === 0 && <Vacio icono={Receipt} titulo="Todavía no tiene pagos registrados" />}
-          {pagos.data && pagos.data.length > 0 && <TablaPagos pagos={pagos.data} alAnular={setPagoAAnular} />}
+          {pagos.data && pagos.data.length > 0 && (
+            <TablaPagos pagos={pagos.data} alAnular={setPagoAAnular} alVerDetalle={setPagoDetalle} />
+          )}
         </CardContent>
       </Card>
 
       {registrandoPago && socio.activo && (
         <RegistrarPagoDialogo socio={socio} alCerrar={() => setRegistrandoPago(false)} />
       )}
+      {pagoDetalle && <DetalleAnulacionDialogo pago={pagoDetalle} alCerrar={() => setPagoDetalle(null)} />}
       {pagoAAnular && (
         <AnularPagoDialogo
           pago={pagoAAnular}
@@ -209,7 +214,15 @@ function Dato({ etiqueta, children }: { etiqueta: string; children: ReactNode })
   );
 }
 
-function TablaPagos({ pagos, alAnular }: { pagos: Pago[]; alAnular: (pago: Pago) => void }) {
+function TablaPagos({
+  pagos,
+  alAnular,
+  alVerDetalle,
+}: {
+  pagos: Pago[];
+  alAnular: (pago: Pago) => void;
+  alVerDetalle: (pago: Pago) => void;
+}) {
   return (
     <Table>
       <TableHeader>
@@ -230,8 +243,17 @@ function TablaPagos({ pagos, alAnular }: { pagos: Pago[]; alAnular: (pago: Pago)
             <TableCell className="tabular-nums">
               <span className={cn(p.anulado && "line-through")}>{formatearFecha(p.fechaPago)}</span>
               {p.anulado && (
-                <span className="mt-1 flex items-center gap-1 text-base font-medium text-destructive">
-                  <Ban className="size-4" aria-hidden /> Anulado{p.anuladoMotivo ? `: ${p.anuladoMotivo}` : ""}
+                <span className="mt-1 flex flex-wrap items-center gap-3 text-base font-medium text-destructive">
+                  <span className="flex items-center gap-1">
+                    <Ban className="size-4" aria-hidden /> Anulado
+                  </span>
+                  <Button
+                    variant="outline"
+                    onClick={() => alVerDetalle(p)}
+                    aria-label={`Ver detalles de la anulación del pago del ${formatearFecha(p.fechaPago)}`}
+                  >
+                    Ver detalles
+                  </Button>
                 </span>
               )}
               {p.origen === "importacion" && <span className="block text-sm">Importado del Excel</span>}

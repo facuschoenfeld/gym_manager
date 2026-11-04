@@ -126,3 +126,12 @@ export function describirPeriodo(periodo: Periodo, cantidad: number): string {
   const [singular, plural] = NOMBRES_PERIODO[periodo];
   return `${cantidad} ${cantidad === 1 ? singular : plural}`;
 }
+
+/**
+ * Hora 'HH:MM' de una fecha y hora 'YYYY-MM-DD HH:MM:SS' (también acepta 'T' como separador).
+ * Devuelve null si no hay hora (null, fecha sola o formato inválido).
+ */
+export function horaDe(fechaHora: string | null | undefined): string | null {
+  const m = fechaHora ? /^\d{4}-\d{2}-\d{2}[ T](\d{2}:\d{2})/.exec(fechaHora) : null;
+  return m?.[1] ?? null;
+}
