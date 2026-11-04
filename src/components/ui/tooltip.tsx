@@ -22,9 +22,23 @@ function Tooltip({
 }
 
 function TooltipTrigger({
+  onFocus,
   ...props
 }: React.ComponentProps<typeof TooltipPrimitive.Trigger>) {
-  return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" {...props} />
+  // Radix abre el tooltip con cualquier foco que no venga de un clic. Eso hace que aparezca solo
+  // cuando el foco vuelve por código (ej. al cerrar un diálogo). Acá solo se permite con foco
+  // visible de teclado: si el foco no es visible (clic previo), se cancela la apertura.
+  // Radix respeta el preventDefault de este handler (composeEventHandlers).
+  return (
+    <TooltipPrimitive.Trigger
+      data-slot="tooltip-trigger"
+      onFocus={(e) => {
+        onFocus?.(e);
+        if (!e.currentTarget.matches(":focus-visible")) e.preventDefault();
+      }}
+      {...props}
+    />
+  )
 }
 
 function TooltipContent({
