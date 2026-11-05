@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { CircleCheck, CircleDashed, Dumbbell, ImagePlus, Loader2, Trash2 } from "lucide-react";
+import { CircleCheck, CircleDashed, ImagePlus, Loader2, Trash2 } from "lucide-react";
 import { Confirmar } from "@/components/Confirmar";
 import { ErrorCarga } from "@/components/EstadosCarga";
 import { avisar } from "@/components/notificar";
@@ -89,7 +89,9 @@ export function TarjetaLogo() {
             {!logo.isPending && tieneLogo && (
               <img src={logo.data?.dataUrl ?? ""} alt="Logo actual del gimnasio" className="max-h-full max-w-full object-contain" />
             )}
-            {!logo.isPending && !tieneLogo && <Dumbbell className="size-16 text-gray-700" aria-hidden />}
+            {!logo.isPending && !tieneLogo && (
+              <img src="/icono_gym-manager-sin-fondo.svg" alt="" className="size-16" />
+            )}
           </div>
           {!logo.isPending && !logo.error &&
             (tieneLogo ? (

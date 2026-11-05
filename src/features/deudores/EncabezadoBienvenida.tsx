@@ -1,5 +1,5 @@
 import { Link } from "react-router";
-import { Dumbbell, ImagePlus, Loader2 } from "lucide-react";
+import { ImagePlus, Loader2 } from "lucide-react";
 import { Cargando, ErrorCarga } from "@/components/EstadosCarga";
 import { Button } from "@/components/ui/button";
 import { useAhora } from "@/components/useAhora";
@@ -37,7 +37,7 @@ export function EncabezadoBienvenida() {
         )}
         {!logo.isPending && logo.error && (
           <div className="flex flex-col items-center gap-3">
-            <Dumbbell className="size-16 text-primary" aria-hidden />
+            <img src="/icono_gym-manager-sin-fondo.svg" alt="" className="size-16" />
             <p role="alert" className="text-base font-medium text-destructive">
               No se pudo leer el logo guardado.
             </p>
@@ -54,7 +54,8 @@ export function EncabezadoBienvenida() {
         )}
         {!logo.isPending && !logo.error && !tieneLogo && (
           <div className="flex flex-col items-center gap-4">
-            <Dumbbell className="size-20 text-primary" aria-hidden />
+            {/* Sin logo cargado se muestra la marca de la app (la misma de la barra lateral). */}
+            <img src="/icono_gym-manager-sin-fondo.svg" alt="" className="size-20" />
             <Button asChild variant="outline" size="lg">
               <Link to="/configuracion">
                 <ImagePlus aria-hidden /> Cargá el logo de tu gimnasio
