@@ -1,6 +1,5 @@
 import { NavLink, Outlet, useNavigate } from "react-router";
 import {
-  Dumbbell,
   FileSpreadsheet,
   LayoutDashboard,
   Moon,
@@ -63,7 +62,9 @@ export function Layout() {
       </a>
       <aside className="flex w-60 shrink-0 flex-col border-r bg-sidebar text-sidebar-foreground print:hidden">
         <div className="flex items-center gap-2 px-5 py-6">
-          <Dumbbell className="size-7 text-primary" aria-hidden />
+          {/* Marca fija de la app: el SVG original sin su fondo blanco (el relleno del brazo queda igual).
+              Es decorativa: el nombre de al lado ya la identifica. */}
+          <img src="/icono_gym-manager-sin-fondo.svg" alt="" className="size-9 shrink-0" />
           <span className="text-lg font-semibold">Gym Manager</span>
         </div>
         <nav className="flex flex-1 flex-col gap-1 px-3" aria-label="Secciones">
