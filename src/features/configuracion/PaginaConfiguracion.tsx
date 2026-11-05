@@ -262,6 +262,10 @@ function FormularioGeneral({ config }: { config: Config }) {
               <kbd className="font-mono">Esc</kbd>
             </dt>
             <dd>Cerrar ventana o diálogo</dd>
+            <dt className="font-medium">
+              <kbd className="font-mono">Ctrl+R</kbd>
+            </dt>
+            <dd>Refrescar la pantalla</dd>
           </dl>
         </CardContent>
       </Card>
