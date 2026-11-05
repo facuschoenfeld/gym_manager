@@ -15,6 +15,7 @@ import type { Config } from "@/db/queries/config";
 import { REGLAS_VENCIMIENTO, type ReglaVencimiento } from "@/lib/vencimiento";
 import { cn } from "@/lib/utils";
 import { useConfig, useGuardarConfig } from "./hooks";
+import { TarjetaLogo } from "./TarjetaLogo";
 import {
   configAFormulario,
   esquemaConfiguracion,
@@ -35,6 +36,8 @@ export function PaginaConfiguracion() {
     <Pagina titulo="Configuración" descripcion="Datos del gimnasio y reglas de vencimiento de las cuotas.">
       {config.isPending && <Cargando texto="Cargando configuración…" />}
       {config.error && <ErrorCarga error={config.error} reintentar={() => void config.refetch()} />}
+      {/* Fuera del formulario: el logo se guarda al elegirlo y no depende de "Guardar cambios". */}
+      {config.data && <TarjetaLogo />}
       {config.data && <FormularioGeneral config={config.data} />}
     </Pagina>
   );
