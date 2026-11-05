@@ -1,7 +1,7 @@
 /** Lectura y escritura de la tabla `config` (clave/valor), validada con Zod. */
 import { z } from "zod";
 import { consultar, ejecutarLote } from "../client";
-import { CLAVE_LOGO_BD } from "./logo";
+import { CLAVE_LOGO_BD, CLAVE_LOGO_FONDO_BD } from "./logo";
 
 const entero = (min: number, max: number, porDefecto: number) =>
   z.coerce.number().int().min(min).max(max).catch(porDefecto);
@@ -25,10 +25,10 @@ export type Config = z.infer<typeof esquemaConfig>;
 export type ClaveConfig = keyof Config;
 
 export async function leerConfig(): Promise<Config> {
-  // El logo (data URL, puede pesar cientos de KB) no se lee acá: tiene su propia consulta (logo.ts).
+  // El logo (data URL, puede pesar cientos de KB) y su fondo no se leen acá: tienen su propia consulta (logo.ts).
   const filas = await consultar<{ clave: string; valor: string | null }>(
-    "SELECT clave, valor FROM config WHERE clave <> $1",
-    [CLAVE_LOGO_BD],
+    "SELECT clave, valor FROM config WHERE clave NOT IN ($1, $2)",
+    [CLAVE_LOGO_BD, CLAVE_LOGO_FONDO_BD],
   );
   const crudo = Object.fromEntries(filas.map((f) => [f.clave, f.valor ?? ""]));
   return esquemaConfig.parse(crudo);

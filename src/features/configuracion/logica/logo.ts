@@ -93,3 +93,41 @@ export function pasosDeSalida(tipoOrigen: string): PasoSalida[] {
     { formato: "image/webp", calidad: 0.8, ladoMax: LADO_MAX_LOGO_REDUCIDO },
   ];
 }
+
+/** Fondo de la caja donde se muestra el logo: uno que contraste con él. */
+export type FondoLogo = "claro" | "oscuro";
+
+/**
+ * Luminancia promedio (0 a 1) de los píxeles visibles de una imagen RGBA (4 bytes por píxel).
+ * Los píxeles casi transparentes no cuentan: un logo con fondo transparente solo pesa su dibujo.
+ * Devuelve null si no hay ningún píxel visible.
+ */
+export function luminanciaPromedio(rgba: ArrayLike<number>): number | null {
+  let suma = 0;
+  let cantidad = 0;
+  for (let i = 0; i + 3 < rgba.length; i += 4) {
+    const alpha = rgba[i + 3] ?? 0;
+    if (alpha < 128) continue;
+    // Luminancia perceptual (Rec. 709) sobre valores 0 a 1.
+    const r = (rgba[i] ?? 0) / 255;
+    const g = (rgba[i + 1] ?? 0) / 255;
+    const b = (rgba[i + 2] ?? 0) / 255;
+    suma += 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    cantidad++;
+  }
+  return cantidad > 0 ? suma / cantidad : null;
+}
+
+/**
+ * Logo claro (letras blancas, por ejemplo) → caja oscura. Logo oscuro → caja clara.
+ * Sin píxeles visibles, se usa la caja clara (la de siempre).
+ */
+export function fondoParaLuminancia(luminancia: number | null): FondoLogo {
+  return luminancia !== null && luminancia > 0.5 ? "oscuro" : "claro";
+}
+
+/** Clases de la caja donde se muestra el logo: el fondo contrasta con el logo (ver fondoParaLuminancia). */
+export function clasesCajaLogo(fondo: FondoLogo): string {
+  // El oscuro es el mismo color que la barra lateral en modo oscuro (--sidebar en index.css), fijo en ambos temas.
+  return fondo === "oscuro" ? "border-[oklch(0.3_0_0)] bg-[oklch(0.205_0_0)]" : "border-gray-200 bg-white";
+}

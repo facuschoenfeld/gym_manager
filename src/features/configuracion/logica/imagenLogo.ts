@@ -10,8 +10,17 @@ import {
   calcularDimensionesLogo,
   esDataUrlLogoValida,
   excedeLimitePixeles,
+  fondoParaLuminancia,
+  type FondoLogo,
+  luminanciaPromedio,
   pasosDeSalida,
 } from "./logo";
+
+/** Logo listo para guardar: la imagen y el fondo de caja que mejor la muestra. */
+export interface LogoProcesado {
+  dataUrl: string;
+  fondo: FondoLogo;
+}
 
 const MSJ_LEER_ARCHIVO = "No se pudo leer el archivo elegido.";
 
@@ -38,10 +47,11 @@ function cargarImagen(origen: string): Promise<HTMLImageElement> {
 }
 
 /**
- * Devuelve el logo listo para guardar (data URL, achicado). Prueba los pasos de pasosDeSalida en orden
- * hasta que quepa. Lanza un Error con mensaje para el usuario.
+ * Devuelve el logo listo para guardar (data URL, achicado) y el fondo de caja que le corresponde
+ * según sus colores. Prueba los pasos de pasosDeSalida en orden hasta que quepa. Lanza un Error
+ * con mensaje para el usuario.
  */
-export async function procesarImagenLogo(archivo: File): Promise<string> {
+export async function procesarImagenLogo(archivo: File): Promise<LogoProcesado> {
   const origen = await leerComoDataUrl(archivo);
   const img = await cargarImagen(origen);
 
@@ -67,7 +77,11 @@ export async function procesarImagenLogo(archivo: File): Promise<string> {
 
       const salida = canvas.toDataURL(paso.formato, paso.calidad);
       // Si el canvas no pudo exportar (devuelve "data:,"), esto no pasa la validación.
-      if (esDataUrlLogoValida(salida)) return salida;
+      if (esDataUrlLogoValida(salida)) {
+        // Se mide sobre lo que realmente se guarda (ya achicado), para que coincida con lo que se ve.
+        const pixeles = ctx.getImageData(0, 0, ancho, alto).data;
+        return { dataUrl: salida, fondo: fondoParaLuminancia(luminanciaPromedio(pixeles)) };
+      }
     }
     throw new Error("La imagen es demasiado compleja para guardarla como logo. Probá con una versión más simple.");
   } finally {

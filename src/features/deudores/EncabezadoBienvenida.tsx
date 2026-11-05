@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useAhora } from "@/components/useAhora";
 import { useConfig } from "@/features/configuracion/hooks";
 import { useLogo } from "@/features/configuracion/hooksLogo";
+import { clasesCajaLogo } from "@/features/configuracion/logica/logo";
 import { textoSaludo } from "@/lib/saludo";
 
 /** Alto reservado para el logo: así no salta el diseño cuando llega. */
@@ -46,9 +47,9 @@ export function EncabezadoBienvenida() {
           </div>
         )}
         {!logo.isPending && !logo.error && tieneLogo && (
-          // Caja clara fija: el logo se ve igual en modo claro y oscuro.
-          <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-            <img src={logo.data ?? ""} alt={`Logo de ${nombre}`} className={`${ALTO_LOGO} max-w-full object-contain`} />
+          // La caja contrasta con el logo: oscura si el logo es claro (ej. letras blancas), clara si es oscuro.
+          <div className={`rounded-2xl border p-4 shadow-sm ${clasesCajaLogo(logo.data?.fondo ?? "claro")}`}>
+            <img src={logo.data?.dataUrl ?? ""} alt={`Logo de ${nombre}`} className={`${ALTO_LOGO} max-w-full object-contain`} />
           </div>
         )}
         {!logo.isPending && !logo.error && !tieneLogo && (

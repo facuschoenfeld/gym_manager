@@ -1,10 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { guardarLogo, leerLogo } from "@/db/queries/logo";
+import { guardarLogo, leerLogo, type LogoGuardado } from "@/db/queries/logo";
 
 /** Clave de TanStack Query del logo. Usar siempre esta constante. */
 export const CLAVE_LOGO = ["logo"] as const;
 
-/** El logo como data URL, o null si no hay logo. Casi no cambia: se cachea sin vencimiento. */
+/** El logo (data URL y fondo), o null si no hay logo. Casi no cambia: se cachea sin vencimiento. */
 export function useLogo() {
   return useQuery({ queryKey: CLAVE_LOGO, queryFn: leerLogo, staleTime: Infinity });
 }
@@ -13,7 +13,7 @@ export function useLogo() {
 export function useGuardarLogo() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (dataUrl: string | null) => guardarLogo(dataUrl),
+    mutationFn: (logo: LogoGuardado | null) => guardarLogo(logo),
     onSuccess: () => qc.invalidateQueries({ queryKey: CLAVE_LOGO }),
   });
 }

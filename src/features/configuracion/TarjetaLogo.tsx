@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useGuardarLogo, useLogo } from "./hooksLogo";
 import { procesarImagenLogo } from "./logica/imagenLogo";
-import { TIPOS_LOGO_ACEPTADOS, validarArchivoLogo } from "./logica/logo";
+import { clasesCajaLogo, TIPOS_LOGO_ACEPTADOS, validarArchivoLogo } from "./logica/logo";
 
 const ACEPTAR = TIPOS_LOGO_ACEPTADOS.join(",");
 
@@ -36,8 +36,8 @@ export function TarjetaLogo() {
     }
     setProcesando(true);
     try {
-      const dataUrl = await procesarImagenLogo(archivo);
-      await guardar.mutateAsync(dataUrl);
+      const logoProcesado = await procesarImagenLogo(archivo);
+      await guardar.mutateAsync(logoProcesado);
       avisar.exito("Logo guardado", { descripcion: "Ya aparece en Inicio." });
     } catch (e) {
       avisar.error("No se pudo guardar el logo", e);
@@ -65,8 +65,8 @@ export function TarjetaLogo() {
       <CardHeader>
         <CardTitle className="text-xl">Logo del gimnasio</CardTitle>
         <CardDescription className="text-base">
-          Aparece grande en Inicio. Se guarda al elegirlo: no hace falta apretar "Guardar cambios". Si tu logo es
-          blanco, usá una versión con fondo.
+          Aparece grande en Inicio. Se guarda al elegirlo: no hace falta apretar "Guardar cambios". El fondo se
+          elige solo para que se vea bien.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-6 md:flex-row md:items-center">
@@ -76,8 +76,10 @@ export function TarjetaLogo() {
           </div>
         )}
         <div className="flex flex-col items-center gap-3">
-          {/* Caja clara fija: el logo se ve igual en modo claro y oscuro. */}
-          <div className="flex size-40 items-center justify-center rounded-xl border-2 border-foreground/30 bg-white p-3">
+          {/* La caja contrasta con el logo (ver fondoParaLuminancia): el logo nunca queda del mismo color que el fondo. */}
+          <div
+            className={`flex size-40 items-center justify-center rounded-xl border-2 p-3 ${clasesCajaLogo(logo.data?.fondo ?? "claro")}`}
+          >
             {logo.isPending && (
               <div role="status" className="flex flex-col items-center gap-1 text-gray-700">
                 <Loader2 className="size-10 animate-spin" aria-hidden />
@@ -85,7 +87,7 @@ export function TarjetaLogo() {
               </div>
             )}
             {!logo.isPending && tieneLogo && (
-              <img src={logo.data ?? ""} alt="Logo actual del gimnasio" className="max-h-full max-w-full object-contain" />
+              <img src={logo.data?.dataUrl ?? ""} alt="Logo actual del gimnasio" className="max-h-full max-w-full object-contain" />
             )}
             {!logo.isPending && !tieneLogo && <Dumbbell className="size-16 text-gray-700" aria-hidden />}
           </div>

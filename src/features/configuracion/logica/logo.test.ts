@@ -4,6 +4,8 @@ import {
   esDataUrlLogoValida,
   excedeLimitePixeles,
   formatoSalida,
+  fondoParaLuminancia,
+  luminanciaPromedio,
   LADO_MAX_LOGO,
   LADO_MAX_LOGO_REDUCIDO,
   pasosDeSalida,
@@ -211,5 +213,33 @@ describe("pasosDeSalida", () => {
     for (let i = 1; i < pasos.length; i++) {
       expect(pasos[i]?.ladoMax ?? 0).toBeLessThanOrEqual(pasos[i - 1]?.ladoMax ?? 0);
     }
+  });
+});
+
+describe("luminanciaPromedio", () => {
+  it("un píxel blanco opaco da 1 y uno negro opaco da 0", () => {
+    expect(luminanciaPromedio([255, 255, 255, 255])).toBeCloseTo(1);
+    expect(luminanciaPromedio([0, 0, 0, 255])).toBeCloseTo(0);
+  });
+
+  it("ignora los píxeles transparentes", () => {
+    // Un blanco opaco y un negro totalmente transparente: solo cuenta el blanco.
+    expect(luminanciaPromedio([255, 255, 255, 255, 0, 0, 0, 0])).toBeCloseTo(1);
+  });
+
+  it("devuelve null si no hay píxeles visibles", () => {
+    expect(luminanciaPromedio([255, 255, 255, 0])).toBe(null);
+    expect(luminanciaPromedio([])).toBe(null);
+  });
+});
+
+describe("fondoParaLuminancia", () => {
+  it("un logo claro va sobre caja oscura, y uno oscuro sobre caja clara", () => {
+    expect(fondoParaLuminancia(0.9)).toBe("oscuro");
+    expect(fondoParaLuminancia(0.1)).toBe("claro");
+  });
+
+  it("sin píxeles visibles usa la caja clara de siempre", () => {
+    expect(fondoParaLuminancia(null)).toBe("claro");
   });
 });
