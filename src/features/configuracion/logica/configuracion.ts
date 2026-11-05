@@ -8,6 +8,7 @@ export interface FormularioConfiguracion {
   dias_gracia: string;
   regla_vencimiento: Config["regla_vencimiento"];
   codigo_area: string;
+  plantilla_aviso: string;
 }
 
 const dias = (campo: string) =>
@@ -35,6 +36,8 @@ export const esquemaConfiguracion = z.object({
         .string()
         .regex(/^(\d{2,4})?$/, "El código de área tiene entre 2 y 4 dígitos, sin el 0 (ej. 3482)"),
     ),
+  // Vacía = se usa el texto por defecto (ver PLANTILLA_AVISO_POR_DEFECTO).
+  plantilla_aviso: z.string().trim().max(600, "La plantilla es demasiado larga (máximo 600 caracteres)"),
 });
 
 export type DatosConfiguracion = z.output<typeof esquemaConfiguracion>;
@@ -46,5 +49,6 @@ export function configAFormulario(c: Config): FormularioConfiguracion {
     dias_gracia: String(c.dias_gracia),
     regla_vencimiento: c.regla_vencimiento,
     codigo_area: c.codigo_area,
+    plantilla_aviso: c.plantilla_aviso,
   };
 }

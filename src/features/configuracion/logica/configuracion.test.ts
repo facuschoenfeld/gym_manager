@@ -8,6 +8,7 @@ const valido = {
   dias_gracia: "0",
   regla_vencimiento: "desde_vencimiento_anterior",
   codigo_area: "3482",
+  plantilla_aviso: "Hola {nombre}",
 };
 
 describe("esquemaConfiguracion", () => {
@@ -21,6 +22,7 @@ describe("esquemaConfiguracion", () => {
         dias_gracia: 0,
         regla_vencimiento: "desde_vencimiento_anterior",
         codigo_area: "3482",
+        plantilla_aviso: "Hola {nombre}",
       });
     }
   });
@@ -88,6 +90,7 @@ describe("configAFormulario", () => {
       dias_gracia: "2",
       regla_vencimiento: "desde_fecha_pago",
       codigo_area: "3482",
+      plantilla_aviso: "",
     });
   });
 

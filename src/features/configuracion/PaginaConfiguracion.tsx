@@ -11,6 +11,7 @@ import { avisar } from "@/components/notificar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import type { Config } from "@/db/queries/config";
 import { REGLAS_VENCIMIENTO, type ReglaVencimiento } from "@/lib/vencimiento";
 import { cn } from "@/lib/utils";
@@ -198,6 +199,32 @@ function FormularioGeneral({ config }: { config: Config }) {
               </label>
             ))}
           </fieldset>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl">Mensaje de aviso por WhatsApp</CardTitle>
+          <CardDescription className="text-base">
+            Texto que se abre ya escrito en WhatsApp al avisar a un socio vencido. Desde WhatsApp se puede cambiar antes de enviarlo.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3">
+          <Campo
+            id="cfg-plantilla"
+            etiqueta="Plantilla del mensaje"
+            ayuda={"Podés usar {nombre}, {gimnasio}, {vencimiento} y {monto}. Si queda vacía, se usa el texto por defecto."}
+            error={e.plantilla_aviso?.message}
+          >
+            <Textarea
+              id="cfg-plantilla"
+              rows={5}
+              className="text-base"
+              aria-invalid={!!e.plantilla_aviso}
+              aria-describedby={idsDescripcion("cfg-plantilla", e.plantilla_aviso?.message, true)}
+              {...register("plantilla_aviso")}
+            />
+          </Campo>
         </CardContent>
       </Card>
 
