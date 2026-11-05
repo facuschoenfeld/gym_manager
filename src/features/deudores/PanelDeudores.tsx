@@ -5,8 +5,9 @@
  */
 import { useState } from "react";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { CircleCheck, Loader2, MessageCircle, PhoneOff } from "lucide-react";
+import { CircleCheck, Loader2, PhoneOff } from "lucide-react";
 import { Cargando, ErrorCarga, Vacio } from "@/components/EstadosCarga";
+import { WhatsApp } from "@/components/iconos/WhatsApp";
 import { avisar } from "@/components/notificar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -170,7 +171,7 @@ export function PanelDeudores() {
                               {enviandoA === s.id ? (
                                 <Loader2 className="animate-spin" aria-hidden />
                               ) : (
-                                <MessageCircle aria-hidden />
+                                <WhatsApp className="size-5" aria-hidden />
                               )}
                               {enviandoA === s.id ? "Abriendo…" : "WhatsApp"}
                             </Button>
