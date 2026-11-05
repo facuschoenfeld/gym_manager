@@ -4,6 +4,7 @@
  * y se registra el aviso (para ver "último aviso" y no insistir de más).
  */
 import { useState } from "react";
+import { Link, useNavigate } from "react-router";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { CircleCheck, Loader2, PhoneOff } from "lucide-react";
 import { Cargando, ErrorCarga, Vacio } from "@/components/EstadosCarga";
@@ -32,6 +33,7 @@ export function PanelDeudores() {
   const hoy = hoyISO();
   const ingresos = useIngresosDelMes(hoy);
   const registrarAviso = useRegistrarAviso();
+  const navigate = useNavigate();
   // Socio al que se le está abriendo WhatsApp (para mostrar el progreso en su fila).
   const [enviandoA, setEnviandoA] = useState<number | null>(null);
 
@@ -140,8 +142,21 @@ export function PanelDeudores() {
                     const telefono = normalizarTelefono(s.telefono, cfg.codigo_area);
                     const nombreCompleto = s.apellido ? `${s.apellido} ${s.nombre}` : s.nombre;
                     return (
-                      <TableRow key={s.id}>
-                        <TableCell className="font-medium">{s.apellido ? `${s.apellido}, ${s.nombre}` : s.nombre}</TableCell>
+                      <TableRow
+                        key={s.id}
+                        className="cursor-pointer hover:bg-muted/60"
+                        onClick={() => navigate(`/socios/${s.id}`)}
+                      >
+                        <TableCell className="font-medium">
+                          {/* El enlace da acceso por teclado; la fila entera también abre la ficha. */}
+                          <Link
+                            to={`/socios/${s.id}`}
+                            className="rounded-sm underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {s.apellido ? `${s.apellido}, ${s.nombre}` : s.nombre}
+                          </Link>
+                        </TableCell>
                         <TableCell>
                           {telefono.ok ? (
                             s.telefono
@@ -164,7 +179,11 @@ export function PanelDeudores() {
                           {s.estado === "vencido" ? (
                             <Button
                               variant="outline"
-                              onClick={() => telefono.ok && void avisarPorWhatsapp(s, telefono.telefono)}
+                              onClick={(e) => {
+                                // Dentro de una fila clicable: no debe abrir la ficha.
+                                e.stopPropagation();
+                                if (telefono.ok) void avisarPorWhatsapp(s, telefono.telefono);
+                              }}
                               disabled={enviandoA !== null || !telefono.ok}
                               aria-label={`Avisar por WhatsApp a ${nombreCompleto}`}
                             >
