@@ -65,7 +65,7 @@ export function Layout() {
           {/* Marca fija de la app: el SVG original sin su fondo blanco (el relleno del brazo queda igual).
               Es decorativa: el nombre de al lado ya la identifica. */}
           <img src="/icono_gym-manager-sin-fondo.svg" alt="" className="size-9 shrink-0" />
-          <span className="text-lg font-semibold">Gym Manager</span>
+          <span className="text-lg font-semibold">GYM MANAGER</span>
         </div>
         <nav className="flex flex-1 flex-col gap-1 px-3" aria-label="Secciones">
           {MENU.map(({ a, etiqueta, icono: Icono }) => (
