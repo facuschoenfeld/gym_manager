@@ -351,6 +351,9 @@ export function PaginaImportar() {
               {resultado.pagosOmitidos > 0 && (
                 <li>Pagos omitidos (ya había un pago ese día): <strong>{resultado.pagosOmitidos}</strong></li>
               )}
+              {resultado.dadosDeBaja > 0 && (
+                <li>Socios que estaban dados de baja (siguen dados de baja): <strong>{resultado.dadosDeBaja}</strong></li>
+              )}
               <li>Filas con error (no importadas): <strong>{rechazadasFinal.length}</strong></li>
             </ul>
             {rechazadasFinal.length > 0 && (
@@ -368,7 +371,7 @@ export function PaginaImportar() {
         abierto={confirmarAbierto}
         alCambiar={setConfirmarAbierto}
         titulo={`¿Importar ${validas.length} ${validas.length === 1 ? "socio" : "socios"}?`}
-        descripcion={`Las filas con error (${conError.length}) no se importan. Los socios que ya existen (por DNI, o por nombre y apellido si no tienen DNI) se actualizan sin borrar lo que ya tienen. Los pagos quedan como importados y no se pueden borrar, solo anular.`}
+        descripcion={`Las filas con error (${conError.length}) no se importan. Los socios que ya existen (por DNI, o por nombre y apellido si no tienen DNI) se actualizan sin borrar lo que ya tienen, y los dados de baja siguen dados de baja. Los pagos quedan como importados y no se pueden borrar, solo anular. Si ya importaste este mismo archivo antes, los pagos del mismo día se omiten, pero los de otra fecha se vuelven a cargar.`}
         accion={{ texto: "Importar", alConfirmar: () => void importar() }}
         procesando={importando}
       />

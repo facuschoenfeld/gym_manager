@@ -315,7 +315,7 @@ export function validarArchivo(filas: FilaImportacion[], mapeo: MapeoColumnas, c
 
 export type AccionImportacion =
   | { tipo: "crear"; socio: SocioImportable; numero: number }
-  | { tipo: "actualizar"; socio: SocioImportable; numero: number; clienteId: number };
+  | { tipo: "actualizar"; socio: SocioImportable; numero: number; clienteId: number; dadoDeBaja: boolean };
 
 /**
  * Decide para cada fila válida si crea el socio o actualiza uno existente. El DNI identifica al socio;
@@ -334,7 +334,7 @@ export interface PlanImportacion {
 
 export function planificarAcciones(
   validas: FilaValidada[],
-  existentes: Pick<Socio, "id" | "dni" | "nombre" | "apellido">[],
+  existentes: Pick<Socio, "id" | "dni" | "nombre" | "apellido" | "activo">[],
 ): PlanImportacion {
   const acciones: AccionImportacion[] = [];
   const conflictos: ConflictoImportacion[] = [];
@@ -364,7 +364,8 @@ export function planificarAcciones(
       continue;
     }
     tocados.set(coincide.id, fila.numero);
-    acciones.push({ tipo: "actualizar", socio: s, numero: fila.numero, clienteId: coincide.id });
+    // Un socio dado de baja se actualiza con los datos del archivo, pero sigue dado de baja.
+    acciones.push({ tipo: "actualizar", socio: s, numero: fila.numero, clienteId: coincide.id, dadoDeBaja: !coincide.activo });
   }
   return { acciones, conflictos };
 }

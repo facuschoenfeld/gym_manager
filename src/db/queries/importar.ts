@@ -44,6 +44,8 @@ export interface ResultadoImportacion {
   pagosCreados: number;
   /** Pagos que no se cargaron porque ese socio ya tenía un pago vigente ese día. */
   pagosOmitidos: number;
+  /** Socios actualizados que estaban dados de baja: siguen dados de baja. */
+  dadosDeBaja: number;
 }
 
 /**
@@ -108,5 +110,6 @@ export async function ejecutarImportacion(
   }
 
   await ejecutarLote(sentencias);
-  return { creados, actualizados, pagosCreados, pagosOmitidos };
+  const dadosDeBaja = acciones.filter((a) => a.tipo === "actualizar" && a.dadoDeBaja).length;
+  return { creados, actualizados, pagosCreados, pagosOmitidos, dadosDeBaja };
 }

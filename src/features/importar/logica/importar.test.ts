@@ -199,7 +199,7 @@ describe("validarArchivo", () => {
 });
 
 describe("planificarAcciones", () => {
-  const existentes = [{ id: 7, dni: "30123456", nombre: "Ana", apellido: null }];
+  const existentes = [{ id: 7, dni: "30123456", nombre: "Ana", apellido: null, activo: true }];
 
   it("un DNI existente se actualiza; uno nuevo se crea", () => {
     const validas = validarArchivo([fila(2, ["Ana", "", "30123456"]), fila(3, ["Luis", "", "28111222"])], mapeo, ctx);
@@ -229,14 +229,23 @@ describe("planificarAcciones", () => {
 
   it("nombre que coincide con varios socios sin DNI: conflicto para elegir a mano", () => {
     const dosLuis = [
-      { id: 1, dni: null, nombre: "Luis", apellido: "Gómez" },
-      { id: 2, dni: null, nombre: "Luis", apellido: "Gómez" },
+      { id: 1, dni: null, nombre: "Luis", apellido: "Gómez", activo: true },
+      { id: 2, dni: null, nombre: "Luis", apellido: "Gómez", activo: true },
     ];
     const m: MapeoColumnas = ["nombre", "apellido"];
     const validas = validarArchivo([fila(2, ["Luis", "Gómez"])], m, ctx);
     const { acciones, conflictos } = planificarAcciones(validas, dosLuis);
     expect(acciones).toEqual([]);
     expect(conflictos[0]?.motivo).toContain("2 socios");
+  });
+});
+
+describe("socios dados de baja", () => {
+  it("se actualizan con los datos del archivo pero se marcan como dados de baja", () => {
+    const bajas = [{ id: 9, dni: "30123456", nombre: "Ana", apellido: null, activo: false }];
+    const validas = validarArchivo([fila(2, ["Ana", "", "30123456"])], mapeo, ctx);
+    const { acciones } = planificarAcciones(validas, bajas);
+    expect(acciones[0]).toMatchObject({ tipo: "actualizar", clienteId: 9, dadoDeBaja: true });
   });
 });
 
