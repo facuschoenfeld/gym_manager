@@ -22,7 +22,9 @@ export async function ingresosDelMes(hoy: FechaISO): Promise<IngresosMes> {
   const fila = await consultarUno<{ total: number; cantidad: number }>(
     `SELECT COALESCE(SUM(monto), 0) AS total, COUNT(*) AS cantidad
        FROM pagos
-      WHERE anulado = 0 AND fecha_pago BETWEEN $1 AND $2`,
+      WHERE anulado = 0 AND fecha_pago BETWEEN $1 AND $2
+        -- Los registros de importación sin cobro (monto 0, solo guardan un vencimiento) no son ingresos.
+        AND NOT (origen = 'importacion' AND monto = 0)`,
     [desde, hasta],
   );
   return { total: fila?.total ?? 0, cantidad: fila?.cantidad ?? 0 };

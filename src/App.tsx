@@ -9,7 +9,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { Layout } from "@/components/layout/Layout";
-import { EnConstruccion } from "@/components/layout/Pagina";
+import { PaginaImportar } from "@/features/importar/PaginaImportar";
 import { PaginaInicio } from "@/features/deudores/PaginaInicio";
 import { PaginaConfiguracion } from "@/features/configuracion/PaginaConfiguracion";
 import { PaginaPlanes } from "@/features/planes/PaginaPlanes";
@@ -61,7 +61,7 @@ const router = createHashRouter([
       { path: "socios", element: <PaginaSocios /> },
       { path: "socios/:id", element: <FichaSocio /> },
       { path: "planes", element: <PaginaPlanes /> },
-      { path: "importar", element: <EnConstruccion titulo="Importar Excel" fase={5} /> },
+      { path: "importar", element: <PaginaImportar /> },
       { path: "configuracion", element: <PaginaConfiguracion /> },
     ],
   },
