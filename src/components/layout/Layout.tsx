@@ -48,7 +48,7 @@ export function Layout() {
   ]);
 
   return (
-    <div className="flex h-screen bg-background text-foreground">
+    <div className="flex h-screen bg-background text-foreground print:block print:h-auto">
       <a
         href="#contenido"
         onClick={(e) => {
@@ -96,7 +96,7 @@ export function Layout() {
           </Button>
         </div>
       </aside>
-      <main id="contenido" tabIndex={-1} className="flex-1 overflow-y-auto outline-none">
+      <main id="contenido" tabIndex={-1} className="flex-1 overflow-y-auto outline-none print:overflow-visible">
         <Outlet />
       </main>
     </div>

@@ -23,7 +23,13 @@ import { formatearFecha, hoyISO } from "@/lib/fechas";
 import { normalizarTelefono } from "@/lib/telefonos";
 import { cn } from "@/lib/utils";
 import { useIngresosDelMes, useRegistrarAviso } from "./hooks";
-import { armarMensajeAviso, contarEstados, listarDeudores, montoParaAviso, urlWhatsapp } from "./logica/deudores";
+import {
+  armarMensajeAviso,
+  contarEstados,
+  listarDeudores,
+  montoParaAviso,
+  urlWhatsapp,
+} from "./logica/deudores";
 
 const ORDEN_CONTADORES: EstadoSocio[] = ["pago", "por_vencer", "vencido", "sin_pagos"];
 

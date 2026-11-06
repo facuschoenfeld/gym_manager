@@ -133,3 +133,10 @@
     font-size: 106.25%;
     }
 }
+/* Impresión: el listado de deudores va en hojas A4 apaisadas, sin cortar filas. */
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 12mm;
+  }
+}

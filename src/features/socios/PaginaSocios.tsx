@@ -1,9 +1,14 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
-import { ChevronRight, CreditCard, Plus, Search, UserPlus, Users, X } from "lucide-react";
+import { ChevronRight, CreditCard, FileSpreadsheet, Plus, Printer, Search, UserPlus, Users, X } from "lucide-react";
 import { Cargando, ErrorCarga, Vacio } from "@/components/EstadosCarga";
 import { Pagina } from "@/components/layout/Pagina";
+import { avisar } from "@/components/notificar";
+import { useConfig } from "@/features/configuracion/hooks";
+import { ListadoDeudoresImprimible } from "@/features/deudores/ListadoDeudoresImprimible";
+import { filasExcelDeudores, listarDeudores } from "@/features/deudores/logica/deudores";
+import { generarHojaExcel, guardarArchivo } from "@/features/importar/excel";
 import type { EstadoNavegacion } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -48,6 +53,7 @@ const col = createColumnHelper<typeof features, SocioConEstado>();
 
 export function PaginaSocios() {
   const socios = useSocios();
+  const config = useConfig();
   const planes = usePlanes();
   const navegar = useNavigate();
   const ubicacion = useLocation();
@@ -142,19 +148,46 @@ export function PaginaSocios() {
 
   const tabla = useTable({ features, columns: columnas, data: filtrados, getRowId: (s) => String(s.id) });
 
+  // Solo los vencidos (activos): el Excel y la impresión no incluyen los "por vencer".
+  const vencidos = useMemo(
+    () => listarDeudores(socios.data ?? []).filter((s) => s.estado === "vencido"),
+    [socios.data],
+  );
+  const nombreGimnasio = config.data?.nombre_gimnasio ?? "";
+
+  const exportarDeudores = async () => {
+    try {
+      const bytes = await generarHojaExcel("Vencidos", filasExcelDeudores(vencidos, hoy));
+      const ok = await guardarArchivo(bytes, `socios_vencidos_${hoy}.xlsx`);
+      if (ok) avisar.exito("Lista de vencidos guardada");
+    } catch (e) {
+      avisar.error("No se pudo exportar la lista", e);
+    }
+  };
+
   return (
+    <>
+    <div className="print:hidden">
     <Pagina
       titulo="Socios"
       descripcion={socios.data ? `${totalActivos} ${totalActivos === 1 ? "socio activo" : "socios activos"}` : undefined}
       acciones={
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button size="lg" aria-keyshortcuts="Control+N" onClick={() => setNuevoAbierto(true)}>
-              <Plus aria-hidden /> Nuevo socio
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Atajo: Ctrl+N</TooltipContent>
-        </Tooltip>
+        <>
+          <Button size="lg" variant="outline" onClick={() => void exportarDeudores()} disabled={vencidos.length === 0}>
+            <FileSpreadsheet aria-hidden /> Excel de vencidos
+          </Button>
+          <Button size="lg" variant="outline" onClick={() => window.print()} disabled={vencidos.length === 0}>
+            <Printer aria-hidden /> Imprimir vencidos
+          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button size="lg" aria-keyshortcuts="Control+N" onClick={() => setNuevoAbierto(true)}>
+                <Plus aria-hidden /> Nuevo socio
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Atajo: Ctrl+N</TooltipContent>
+          </Tooltip>
+        </>
       }
     >
       {/* Buscador y filtros */}
@@ -329,6 +362,9 @@ export function PaginaSocios() {
         alGuardar={(id) => void navegar(`/socios/${id}`)}
       />
     </Pagina>
+    </div>
+    <ListadoDeudoresImprimible deudores={vencidos} hoy={hoy} nombreGimnasio={nombreGimnasio} />
+    </>
   );
 }
 

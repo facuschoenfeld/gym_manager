@@ -5,7 +5,7 @@
 import type { SocioConEstado } from "@/features/socios/logica/socio";
 import { formatearPesos } from "@/lib/dinero";
 import { formatearFecha, type FechaISO } from "@/lib/fechas";
-import { PRIORIDAD_ESTADO, type EstadoSocio } from "@/lib/estado";
+import { describirVencimiento, PRIORIDAD_ESTADO, type EstadoSocio } from "@/lib/estado";
 
 export type ContadoresEstado = Record<EstadoSocio, number>;
 
@@ -65,4 +65,27 @@ export function armarMensajeAviso(plantilla: string, datos: DatosAviso): string 
 /** Link wa.me con el texto prellenado. El teléfono debe venir ya normalizado (549 + 10 dígitos). */
 export function urlWhatsapp(telefono: string, texto: string): string {
   return `https://wa.me/${telefono}?text=${encodeURIComponent(texto)}`;
+}
+
+/** Mismas etiquetas que muestra EstadoBadge, sin importar el componente (esta lógica es pura). */
+const ETIQUETA_ESTADO: Record<EstadoSocio, string> = {
+  pago: "Al día",
+  por_vencer: "Por vencer",
+  vencido: "Vencido",
+  sin_pagos: "Sin pagos",
+};
+
+/** Encabezados y filas del Excel de deudores (texto ya formateado, listo para la planilla). */
+export function filasExcelDeudores(deudores: SocioConEstado[], hoy: FechaISO): string[][] {
+  const encabezado = ["Socio", "Teléfono", "Estado", "Vencimiento", "Situación", "Plan", "Último aviso"];
+  const filas = deudores.map((s) => [
+    s.apellido ? `${s.apellido}, ${s.nombre}` : s.nombre,
+    s.telefono ?? "",
+    ETIQUETA_ESTADO[s.estado],
+    formatearFecha(s.venceEl),
+    describirVencimiento(s.venceEl, hoy),
+    s.planNombre ?? "",
+    s.ultimoAviso ? formatearFecha(s.ultimoAviso) : "Nunca",
+  ]);
+  return [encabezado, ...filas];
 }

@@ -4,6 +4,7 @@ import type { EstadoSocio } from "@/lib/estado";
 import {
   armarMensajeAviso,
   contarEstados,
+  filasExcelDeudores,
   listarDeudores,
   montoParaAviso,
   PLANTILLA_AVISO_POR_DEFECTO,
@@ -106,5 +107,30 @@ describe("urlWhatsapp", () => {
     expect(urlWhatsapp("5493482123456", "Hola & chau ¡sí!")).toBe(
       "https://wa.me/5493482123456?text=Hola%20%26%20chau%20%C2%A1s%C3%AD!",
     );
+  });
+});
+
+describe("filasExcelDeudores", () => {
+  it("encabezado y una fila por deudor, con fechas y etiquetas en texto", () => {
+    const d = {
+      ...socio(1, "vencido", -3),
+      apellido: "Gómez",
+      nombre: "Ana",
+      telefono: "5493511234567",
+      venceEl: "2026-11-03",
+      planNombre: "Mensual",
+      ultimoAviso: "2026-11-01 10:00:00",
+    };
+    const filas = filasExcelDeudores([d], "2026-11-06");
+    expect(filas[0]).toEqual(["Socio", "Teléfono", "Estado", "Vencimiento", "Situación", "Plan", "Último aviso"]);
+    expect(filas[1]).toEqual([
+      "Gómez, Ana",
+      "5493511234567",
+      "Vencido",
+      "03/11/2026",
+      "Venció hace 3 días",
+      "Mensual",
+      "01/11/2026",
+    ]);
   });
 });
