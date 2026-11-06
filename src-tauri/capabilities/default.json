@@ -12,19 +12,7 @@
     "sql:default",
     "sql:allow-execute",
     "dialog:default",
-    "fs:default",
-    "fs:allow-read-file",
     "fs:allow-write-file",
-    "fs:allow-read-dir",
-    "fs:allow-copy-file",
-    "fs:allow-remove",
-    "fs:allow-mkdir",
-    "fs:allow-exists",
-    "fs:allow-stat",
-    {
-      "identifier": "fs:scope",
-      "allow": [{ "path": "**" }]
-    },
     "notification:default",
     "log:default",
     "process:allow-restart"

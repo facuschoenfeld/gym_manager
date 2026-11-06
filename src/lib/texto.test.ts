@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  neutralizarFormula,
   capitalizarNombre,
   claveNombre,
   coincideBusqueda,
@@ -135,5 +136,20 @@ describe("otros", () => {
   it("formatearDni", () => expect(formatearDni("30123456")).toBe("30.123.456"));
   it("claveNombre ignora acentos, mayúsculas y espacios", () => {
     expect(claveNombre("José ", "PEÑA")).toBe(claveNombre("jose", "pena"));
+  });
+});
+
+describe("neutralizarFormula", () => {
+  it("antepone un apóstrofo a los textos que Excel podría leer como fórmula", () => {
+    expect(neutralizarFormula("=HYPERLINK(\"x\")")).toBe("'=HYPERLINK(\"x\")");
+    expect(neutralizarFormula("+54911")).toBe("'+54911");
+    expect(neutralizarFormula("-5")).toBe("'-5");
+    expect(neutralizarFormula("@SUM(A1)")).toBe("'@SUM(A1)");
+  });
+  it("deja intactos los demás textos, números y vacíos", () => {
+    expect(neutralizarFormula("Juan Pérez")).toBe("Juan Pérez");
+    expect(neutralizarFormula("5493511234567")).toBe("5493511234567");
+    expect(neutralizarFormula(42)).toBe(42);
+    expect(neutralizarFormula(null)).toBeNull();
   });
 });

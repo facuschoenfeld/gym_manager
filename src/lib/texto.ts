@@ -91,3 +91,12 @@ export function formatearDni(dni: string | null | undefined): string {
 export function claveNombre(nombre: string | null | undefined, apellido: string | null | undefined): string {
   return `${normalizarBusqueda(apellido)}|${normalizarBusqueda(nombre)}`;
 }
+
+/**
+ * Texto seguro para una celda de Excel: si empieza con = + - @ (o tab o retorno), Excel podría tomarlo
+ * como fórmula si alguien edita la celda. Se antepone un apóstrofo, que Excel no muestra.
+ */
+export function neutralizarFormula(valor: unknown): unknown {
+  if (typeof valor !== "string") return valor;
+  return /^[=+\-@\t\r]/.test(valor) ? `'${valor}` : valor;
+}

@@ -18,7 +18,14 @@ import { listarSocios } from "@/db/queries/socios";
 import { useConfig } from "@/features/configuracion/hooks";
 import { usePlanes } from "@/features/planes/hooks";
 import { cn } from "@/lib/utils";
-import { guardarArchivo, generarPlantilla, generarRechazados, leerPrimeraHoja } from "./excel";
+import {
+  guardarArchivo,
+  generarPlantilla,
+  generarRechazados,
+  leerPrimeraHoja,
+  MAX_BYTES_ARCHIVO,
+  MAX_FILAS_IMPORTACION,
+} from "./excel";
 import {
   camposRepetidos,
   CAMPOS_IMPORTABLES,
@@ -83,9 +90,20 @@ export function PaginaImportar() {
       avisar.advertencia("Elegí un archivo .xlsx", { descripcion: "Si tenés un .xls o .csv, guardalo como Excel (.xlsx)." });
       return;
     }
+    if (f.size > MAX_BYTES_ARCHIVO) {
+      avisar.advertencia("El archivo es demasiado grande", {
+        descripcion: "Una planilla de socios pesa unos pocos KB. Dejá solo las columnas y filas necesarias.",
+      });
+      return;
+    }
     setCargando(true);
     try {
-      const { encabezados, filas } = await leerPrimeraHoja(await f.arrayBuffer());
+      const { encabezados, filas, recortado } = await leerPrimeraHoja(await f.arrayBuffer());
+      if (recortado) {
+        avisar.advertencia(`Se leyeron solo las primeras ${MAX_FILAS_IMPORTACION} filas`, {
+          descripcion: "El archivo tiene más filas. Partilo en dos archivos para importar el resto.",
+        });
+      }
       if (encabezados.length === 0 || filas.length === 0) {
         avisar.advertencia("El archivo no tiene datos", { descripcion: "La primera fila tiene que tener los encabezados y debajo los socios." });
         return;
