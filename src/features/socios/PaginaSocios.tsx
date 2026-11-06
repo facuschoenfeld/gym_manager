@@ -4,6 +4,8 @@ import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-tab
 import { ChevronRight, CreditCard, FileSpreadsheet, Plus, Printer, Search, UserPlus, Users, X } from "lucide-react";
 import { Cargando, ErrorCarga, Vacio } from "@/components/EstadosCarga";
 import { Pagina } from "@/components/layout/Pagina";
+import { Espaciador } from "@/components/Espaciador";
+import { useVirtualFilas } from "@/components/useVirtualFilas";
 import { avisar } from "@/components/notificar";
 import { useConfig } from "@/features/configuracion/hooks";
 import { ListadoDeudoresImprimible } from "@/features/deudores/ListadoDeudoresImprimible";
@@ -147,6 +149,14 @@ export function PaginaSocios() {
   );
 
   const tabla = useTable({ features, columns: columnas, data: filtrados, getRowId: (s) => String(s.id) });
+  const filasTabla = tabla.getRowModel().rows;
+  const { ref: listaRef, virtualizador, margen } = useVirtualFilas(filasTabla.length);
+  const visibles = virtualizador.getVirtualItems();
+  const primera = visibles[0];
+  const ultima = visibles[visibles.length - 1];
+  // Alto de las filas no montadas arriba y abajo (relativo al inicio de la tabla).
+  const altoArriba = primera ? primera.start - margen : 0;
+  const altoAbajo = ultima ? virtualizador.getTotalSize() - (ultima.end - margen) : 0;
 
   // Solo los vencidos (activos): el Excel y la impresión no incluyen los "por vencer".
   const vencidos = useMemo(
@@ -316,7 +326,7 @@ export function PaginaSocios() {
             {filtrados.length === 1 ? "1 socio" : `${filtrados.length} socios`}
             {filtrados.length === 1 && filtros.busqueda ? " · Enter para abrir su ficha" : ""}
           </p>
-          <div className="rounded-xl border">
+          <div className="rounded-xl border" ref={listaRef}>
             <Table>
               <TableHeader>
                 {tabla.getHeaderGroups().map((g) => (
@@ -330,19 +340,27 @@ export function PaginaSocios() {
                 ))}
               </TableHeader>
               <TableBody>
-                {tabla.getRowModel().rows.map((fila) => (
-                  <TableRow
-                    key={fila.id}
-                    className={cn("cursor-pointer has-focus-visible:bg-muted", !fila.original.activo && "opacity-70")}
-                    onClick={() => void navegar(`/socios/${fila.original.id}`)}
-                  >
-                    {fila.getAllCells().map((c) => (
-                      <TableCell key={c.id} className={cn(SOLO_PANTALLA_ANCHA.has(c.column.id) && "hidden xl:table-cell")}>
-                        <tabla.FlexRender cell={c} />
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))}
+                {visibles.length > 0 && <Espaciador alto={altoArriba} columnas={tabla.getAllLeafColumns().length} />}
+                {visibles.map((v) => {
+                  const fila = filasTabla[v.index];
+                  if (!fila) return null;
+                  return (
+                    <TableRow
+                      key={fila.id}
+                      data-index={v.index}
+                      ref={virtualizador.measureElement}
+                      className={cn("cursor-pointer has-focus-visible:bg-muted", !fila.original.activo && "opacity-70")}
+                      onClick={() => void navegar(`/socios/${fila.original.id}`)}
+                    >
+                      {fila.getAllCells().map((c) => (
+                        <TableCell key={c.id} className={cn(SOLO_PANTALLA_ANCHA.has(c.column.id) && "hidden xl:table-cell")}>
+                          <tabla.FlexRender cell={c} />
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  );
+                })}
+                {visibles.length > 0 && <Espaciador alto={altoAbajo} columnas={tabla.getAllLeafColumns().length} />}
               </TableBody>
             </Table>
           </div>

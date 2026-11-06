@@ -22,6 +22,8 @@ import { describirVencimiento, type EstadoSocio } from "@/lib/estado";
 import { formatearFecha, hoyISO } from "@/lib/fechas";
 import { normalizarTelefono } from "@/lib/telefonos";
 import { cn } from "@/lib/utils";
+import { Espaciador } from "@/components/Espaciador";
+import { useVirtualFilas } from "@/components/useVirtualFilas";
 import { useIngresosDelMes, useRegistrarAviso } from "./hooks";
 import {
   armarMensajeAviso,
@@ -43,6 +45,15 @@ export function PanelDeudores() {
   // Socio al que se le está abriendo WhatsApp (para mostrar el progreso en su fila).
   const [enviandoA, setEnviandoA] = useState<number | null>(null);
 
+  // Hook antes de los retornos tempranos: la lista de deudores se virtualiza (ver useVirtualFilas).
+  const deudoresLista = socios.data ? listarDeudores(socios.data) : [];
+  const { ref: listaRef, virtualizador, margen } = useVirtualFilas(deudoresLista.length);
+  const visibles = virtualizador.getVirtualItems();
+  const primera = visibles[0];
+  const ultima = visibles[visibles.length - 1];
+  const altoArriba = primera ? primera.start - margen : 0;
+  const altoAbajo = ultima ? virtualizador.getTotalSize() - (ultima.end - margen) : 0;
+
   if (socios.isPending || config.isPending) return <Cargando texto="Cargando deudores…" />;
   if (socios.error || config.error) {
     return (
@@ -59,7 +70,7 @@ export function PanelDeudores() {
 
   const todos = socios.data;
   const contadores = contarEstados(todos);
-  const deudores = listarDeudores(todos);
+  const deudores = deudoresLista;
   const cfg = config.data;
 
   const avisarPorWhatsapp = async (s: SocioConEstado, telefono: string) => {
@@ -129,7 +140,7 @@ export function PanelDeudores() {
               descripcion="Todos los socios activos con pagos están al día."
             />
           ) : (
-            <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Lista de deudores">
+            <div ref={listaRef} className="overflow-x-auto" tabIndex={0} role="region" aria-label="Lista de deudores">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -144,12 +155,17 @@ export function PanelDeudores() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {deudores.map((s) => {
+                  {visibles.length > 0 && <Espaciador alto={altoArriba} columnas={6} />}
+                  {visibles.map((v) => {
+                    const s = deudores[v.index];
+                    if (!s) return null;
                     const telefono = normalizarTelefono(s.telefono, cfg.codigo_area);
                     const nombreCompleto = s.apellido ? `${s.apellido} ${s.nombre}` : s.nombre;
                     return (
                       <TableRow
                         key={s.id}
+                        data-index={v.index}
+                        ref={virtualizador.measureElement}
                         className="cursor-pointer hover:bg-muted/60"
                         onClick={() => navigate(`/socios/${s.id}`)}
                       >
@@ -209,6 +225,7 @@ export function PanelDeudores() {
                       </TableRow>
                     );
                   })}
+                  {visibles.length > 0 && <Espaciador alto={altoAbajo} columnas={6} />}
                 </TableBody>
               </Table>
             </div>
